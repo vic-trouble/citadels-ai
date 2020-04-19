@@ -1,0 +1,44 @@
+Name 	Qty	color	cost	set	alias	Version notes	text
+Watchtower	3	red	1	base			
+Prison	3	red	2	base			
+Battlefield	3	red	3	base	Casern		
+Fortress	2	red	5	base			
+Manor	5	yellow	3	base			
+Castle	4	yellow	4	base			
+Palace	3	yellow	5	base			
+Tavern	5	green	1	base			
+Market	4	green	2	base			
+Trading Post	3	green	2	base	Shop		
+Docks	3	green	3	base			
+Harbor	3	green	4	base	Harbour		
+Town Hall	2	green	5	base	City Hall		
+Temple	3	blue	1	base			
+Church	3	blue	2	base			
+Monastary	3	blue	3	base			
+Cathedral	2	blue	5	base			
+Haunted City	1	purple	2	base	Ghost City		For the purposes of victory points, the Haunted City is conisdered to be of the color of your choice.  You cannot use this ability if you built it during the last round of the game
+Keep	2	purple	3	base			The Keep cannot be destroyed by the Warlord
+Laboratory	1	purple	5	base			Once during your turn, you may discard a district card from your hand and receive one gold from the bank
+Smithy	1	purple	5	base	Manufacture	"BSW version, it's pay 3 gold to draw 2 cards
+French version, it's pay 3 gold to draw 3 cards"	Once during your turn, you may pay two gold to draw 3 district cards.
+Observatory	1	purple	5	base			If you choose to draw cards when you take an action, you draw 3 cards, keep one of your choice, and put the other 2 on the bottom of the deck
+Graveyard	1	purple	5	base	Cemetary		When the Warlord destroys a district, you may pay one gold to take the destroyed district into your hand.  You may not do this if you are the Warlord
+Dragon Gate	1	purple	6	base			This district costs 6 gold to build, but is worth 8 points at the end of the game
+University	1	purple	6	base			This district costs 6 gold to build, but is worth 8 points at the end of the game
+Library	1	purple	6	base			If you choose to draw cards you you take an action, you keep both of the cards you have drawn.
+Great Wall	1	purple	6	base			The cost for the Warlord to destory any of your other districts is increased by one gold
+School Of Magic	1	purple	6	base			For the purposes of income, the School Of Magic I considered to be the color of your choice.  If you are the King this round, for example, the School is considered to be a noble (yellow) district.
+Lighthouse	1	purple	3	Dark City			When you place the Lighthouse in your city, you may look through the District Deck, choose one card and add it to your hand.  Shuffle the deck afterwards.
+Armory	1	purple	3	Dark City	Powerderhouse		During your turn, you may destroy the Armory in order to destory any other district card of your choice in another player's city
+Museum	1	purple	4	Dark City			On your turn, you may place on district card from your hand face down under the Museum.  At the end of the game, you score one extra point for every card under the Museum
+Imperial Treasury	1	purple	4	Dark City			At the end of the game, you score one point for each gold in your possesion.  Gold placed on your district cards do not count towards this total
+Map Room	1	purple	5	Dark City	Casino		At the end of the game, you score one point for each card in your hand.
+Wishing Well	1	purple	5	Dark City	Wish Fountain		At the end of the game, you score one point for every OTHER purple district in your city
+Quarry	1	purple	5	Dark City		Citadelles.net version has no restriction on number of duplicate districts	When building, you may play a district already found in your city.  You may only have one such duplicate district in your city at any one time
+Poor House	1	purple	5	Dark City		French/German version, due to printing error, this card costs 0 gold	If you have no gold at the end of your turn, receive one gold from the bank.  Gold placed on your district cards does not count as your gold for this purpose
+Bell Tower	1	purple	5	Dark City	Tower Bell		When you place the Bell Tower in your city, you may annoucne that the game will end after the round in which a player first places his 7th district.  You may do this even if the Bell Tower is your 7th district.  If the Bell Tower is later destroyed, the game end conditions return to normal
+Factory	1	purple	6	Dark City			Your cost for building OTHER purple district cards is reduced by one.  This does not affect the Warlord's cost for destroying the card
+Park	1	purple	6	Dark City			If you have no cards in your hand at the end of your turn, you may draw 2 cards form the District Deck.
+Hospital	1	purple	6	Dark City			Even if you are assassinated, you may take an action during your turn (but you may not build a district card or use yoru character's power).
+Throne Room	1	purple	6	Dark City			Every time the Crown switches players, you receive one gold from the bank.
+Ball Room	1	purple	6	Dark City		Not used in the Citadelles.net version	"When you have the Crown, all other players must say ""Thanks, your Excellency"" after you have called his character.  If a player forgets to address you in this way, he loses the turn"
