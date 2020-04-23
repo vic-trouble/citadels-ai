@@ -1,0 +1,193 @@
+@startuml
+hide empty members
+
+package game {
+
+class Deck {
+	+shuffle()
+	+takeFromTop(): Card
+	+putOnBottom(card: Card)
+}
+
+class Card {
+	+facedown()
+	+faceup()
+}
+
+enum Character {
+	Assassin
+	Thief
+	Magician
+	King
+	Bishop
+	Merchant
+	Architect
+	Warlord
+}
+
+class CharacterCard {
+	name: string
+	character: Character
+	color: Color
+	rank: int
+}
+
+enum Color {
+	Red
+	Yellow
+	Green
+	Blue
+	Purple
+}
+
+enum District {
+	TownHall,
+	University,
+	DragonGate,
+	Watchtower,
+	Armory,
+	Keep,
+	HauntedCity,
+	MagicSchool,
+	Prison,
+	BallRoom,
+	TradingPost,
+	GreatWall,
+	Battlefield,
+	BellTower,
+	Docks,
+	Graveyard,
+	Temple,
+	Factory,
+	Harbor,
+	Laboratory,
+	Church,
+	Hospital,
+	Palace,
+	Smithy,
+	Monastery,
+	Treasury,
+	Market,
+	Library,
+	Fortress,
+	Lighthouse,
+	Castle,
+	Observatory,
+	Cathedral,
+	MapRoom,
+	Tavern,
+	Park,
+	Museum,
+	PoorHouse,
+	Manor,
+	WhishingWell,
+	ThroneRoom,
+	Quarry
+}
+
+class DistrictCard {
+	name: string
+	district: District
+	color: Color
+	cost: int
+	quantity: int
+}
+
+CharacterCard --|> Card
+DistrictCard --|> Card
+
+class Player {
+	charCard: CharacterCard
+	gold: int
+	districtCards: [DistrictCard]
+	builtDistricts: [DistrictCard]
+	killed: bool
+	robbed: bool
+}
+
+class Turn {
+	killedChar: Character
+	robbedChar: Character
+	unusedCharCards: [CharacterCard]
+}
+
+class Game {
+	bank: Bank
+	players: [Player]
+	crownedPlayer: Player
+	turn: Turn
+}
+
+class Bank
+
+}
+
+package play {
+
+class Command
+
+class TakeGoldFromBank
+class DrawCards
+class DrawAndReturnCards
+
+class KillChar
+class RobChar
+class SwapHands
+class ReplaceCards
+class DestroyDistrict
+
+class SellCard
+class BuyCards
+
+class TakeAnyCard
+
+class ReceiveIncome
+
+class CommandSink {
+	+possibleActions(): [Command]
+	+possibleCharAbilities(): [Command]
+	+possibleDistrictAbilities(): [Command]
+	+possibleBuilds(): [Command]
+	+possibleIncome(): [Command]
+	+possibleFinal(): [Command]
+	+execute(command: Command)
+	+endTurn()
+}
+
+class CharacterWorkflow {
+	+possibleActions()
+	+possibleAbilities()
+	+possibleIncome()
+	+possibleFinal()
+	+onAfterAction()
+}
+
+class DistrictWorkflow() {
+	+possibleAbilities()
+	+onEndTurn()
+}
+
+class PlayerController {
+	+pickChar(charDeck: Deck): CharacterCard
+	+startTurn(commandSink: CommandSink)
+}
+
+}
+
+package rules {
+
+class Rules {
+	+canBeDestroyed(builtDistrict: DistrictCard, target: Player): bool
+	+howManyDistrictsCanBuild(player: Player): int
+	+howMuchCostToDestroy(builtDistrict: DistrictCard, target: Player): int
+	+isCityComplete(builtDistricts: [DistrictCard]): bool
+	+howMuchCostToBuild(district: DistrictCard, player: Player): int
+	+howManyCardsCanDraw(player: Player): int
+	+howManyCardsCanKeep(player: Player): int
+	+canBeBuilt(newDistrict: DistrictCard, builtDistricts: [DistrictCard])
+	+turnIncome(player: Player): int
+}
+
+}
+
+@enduml
