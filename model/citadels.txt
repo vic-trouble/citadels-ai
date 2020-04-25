@@ -97,10 +97,10 @@ CharacterCard --|> Card
 DistrictCard --|> Card
 
 class Player {
-	charCard: CharacterCard
+	char: Character
 	gold: int
-	districtCards: [DistrictCard]
-	builtDistricts: [DistrictCard]
+	districts: [District]
+	city: [District]
 	killed: bool
 	robbed: bool
 }
@@ -108,7 +108,7 @@ class Player {
 class Turn {
 	killedChar: Character
 	robbedChar: Character
-	unusedCharCards: [CharacterCard]
+	unusedChars: [Character]
 }
 
 class Game {
@@ -116,6 +116,10 @@ class Game {
 	players: [Player]
 	crownedPlayer: Player
 	turn: Turn
+}
+
+class GameListener {
+	+onCommandExecuted(command: Command, player: Player)
 }
 
 class Bank
@@ -126,22 +130,22 @@ package play {
 
 class Command
 
-class TakeGoldFromBank
-class DrawCards
-class DrawAndReturnCards
+TakeGoldFromBank --|> Command
+DrawCards --|> Command
+DrawAndReturnCards --|> Command
 
-class KillChar
-class RobChar
-class SwapHands
-class ReplaceCards
-class DestroyDistrict
+KillChar --|> Command
+RobChar --|> Command
+SwapHands --|> Command
+ReplaceCards --|> Command
+DestroyDistrict --|> Command
 
-class SellCard
-class BuyCards
+SellCard --|> Command
+BuyCards --|> Command
 
-class TakeAnyCard
+TakeAnyCard --|> Command
 
-class ReceiveIncome
+ReceiveIncome --|> Command
 
 class CommandSink {
 	+possibleActions(): [Command]
@@ -164,12 +168,19 @@ class CharacterWorkflow {
 
 class DistrictWorkflow() {
 	+possibleAbilities()
+	+onBuilt()
 	+onEndTurn()
+	+onCrownPassed()
 }
 
 class PlayerController {
-	+pickChar(charDeck: Deck): CharacterCard
+	+pickChar(charDeck: Deck): Character
 	+startTurn(commandSink: CommandSink)
+}
+
+class GameController {
+	+addPlayer(controller: PlayerController)
+	+startGame()
 }
 
 }
@@ -177,16 +188,26 @@ class PlayerController {
 package rules {
 
 class Rules {
-	+canBeDestroyed(builtDistrict: DistrictCard, target: Player): bool
+	+canBeDestroyed(builtDistrict: District, target: Player): bool
 	+howManyDistrictsCanBuild(player: Player): int
-	+howMuchCostToDestroy(builtDistrict: DistrictCard, target: Player): int
-	+isCityComplete(builtDistricts: [DistrictCard]): bool
-	+howMuchCostToBuild(district: DistrictCard, player: Player): int
+	+howMuchCostToDestroy(builtDistrict: District, target: Player): int
+	+isCityComplete(city: [District]): bool
+	+howMuchCostToBuild(district: District, player: Player): int
 	+howManyCardsCanDraw(player: Player): int
 	+howManyCardsCanKeep(player: Player): int
-	+canBeBuilt(newDistrict: DistrictCard, builtDistricts: [DistrictCard])
+	+canBeBuilt(newDistrict: District, city: [District])
 	+turnIncome(player: Player): int
 }
+
+}
+
+package ai {
+class Bot
+class Simulation
+
+Bot --|> PlayerController
+Bot --|> GameListener
+Bot --> Simulation
 
 }
 
