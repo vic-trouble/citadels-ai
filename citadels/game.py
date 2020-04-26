@@ -89,20 +89,24 @@ class Player:
     def char(self, value):
         self._char = value
 
+    @property
+    def city(self):
+        return list(self._city)
+
 
 class Turn:
     def __init__(self):
-        self._unusedChars = []
-        self._killedChar = None
-        self._robbedChar = None
+        self._unused_chars = []
+        self.killed_char = None
+        self.robbed_char = None
 
     def drop_char(self, char: Character):
         """ Remove character from playable set """
-        self._unusedChars.append(char)
+        self._unused_chars.append(char)
 
     @property
     def unused_chars(self):
-        return self._unusedChars
+        return self._unused_chars
 
 
 class PlayersProxy:
@@ -121,15 +125,24 @@ class PlayersProxy:
 
     def by_char_selection(self):
         """ Players in order of character selection """
-        if not self._crowned_player:
+        index = self.crowned_index
+        if index == -1:
             return list(self._players)
-
-        crowned_index = self._players.index(self._crowned_player)
-        return self._players[crowned_index:] + self._players[:crowned_index]
+        else:
+            return self._players[index:] + self._players[:index]
 
     def by_take_turn(self):
         """ Players in order of making their turn """
         return list(sorted(self._players, key=lambda p: p.char))
+
+    def find_by_name(self, name):
+        """ Return first player with given name or None """
+        return next((p for p in self._players if p.name == name), None)
+
+    @property
+    def crowned_index(self):
+        """ Index of the crowned player """
+        return self._players.index(self._crowned_player) if self._crowned_player else -1
 
 
 class Game:

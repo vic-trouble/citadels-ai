@@ -5,6 +5,7 @@ from citadels.cards import Card, Character, Deck
 from citadels.commands import Command
 from citadels.game import Game, GameError, Player
 from citadels import rules
+from citadels.shadow import ShadowGame, ShadowPlayer
 
 
 class CommandSpecifier(Enum):
@@ -134,8 +135,9 @@ class GameController:
 
         # TURN-PICK-FIRST, TURN-PICK
         for player in game.players.by_char_selection():
-            selected_char = self.player_controller(player).pick_char(self._game.characters, player, game)
-            self._game.characters.take(selected_char)
+            controller = self.player_controller(player)
+            selected_char = controller.pick_char(game.characters, ShadowPlayer(player), ShadowGame(game))
+            game.characters.take(selected_char)
             player.char = selected_char
 
         # TURN-PICK-FACEDOWN
@@ -148,4 +150,4 @@ class GameController:
             player_controller = self.player_controller(player)
             command_sink = CommandsSink(player, self._game)
             while not command_sink.done:
-                player_controller.take_turn(player, self._game, command_sink)
+                player_controller.take_turn(ShadowPlayer(player), ShadowGame(self._game), command_sink)

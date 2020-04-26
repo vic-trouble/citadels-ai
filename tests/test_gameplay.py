@@ -26,6 +26,7 @@ class SpyPlayerController(DummyPlayerController):
 
     def take_turn(self, player: Player, game: Game, sink: CommandsSink):
         self.possible_actions = sink.possible_actions
+        self.game = game
         sink.execute(self.possible_actions[0])
 
 
@@ -120,3 +121,35 @@ def test_take_turns():
 
     # assert
     assert len(spy_controller.possible_actions) == 2
+
+
+def test_privates_are_not_exposed_to_bot():
+    # arrange
+    characters = Deck(standard_chars())
+    districts = Deck(simple_districts())
+
+    game = Game(characters, districts)
+
+    player1 = game.add_player('Player1')
+    player2 = game.add_player('Player2')
+
+    game_controller = GameController(game)
+    spy_controller = SpyPlayerController()
+    game_controller.set_player_controller(player1, spy_controller)
+    game_controller.set_player_controller(player2, DummyPlayerController())
+
+    game_controller.start_game()
+    game_controller.start_turn()
+
+    # act
+    game_controller.take_turns()
+
+    # assert
+    game = spy_controller.game
+    assert not any(bool(district) for district in game.districts)
+    assert game.crowned_player in game.players
+    another_player = game.players.find_by_name('Player2')
+    assert not any(bool(district) for district in another_player.hand)
+    assert all(bool(district) for district in another_player.city)  # TODO: not verifiable
+    assert another_player.gold
+    assert not hasattr(another_player, 'game')

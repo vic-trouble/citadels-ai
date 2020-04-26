@@ -142,3 +142,6 @@ class Deck:
 
     def __len__(self):
         return len(self._cards)
+
+    def __iter__(self):
+        return iter(self._cards)
