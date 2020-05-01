@@ -62,7 +62,7 @@ def test_start_game():
     assert game.crowned_player == player1
 
 
-def test_pick_chars():
+def test_pick_chars(): # TODO: fails at times
     # arrange
     characters = Deck(standard_chars())
     districts = Deck(simple_districts())

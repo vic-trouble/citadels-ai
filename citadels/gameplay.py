@@ -76,7 +76,7 @@ class CommandsSink:
 
         # INCOME
         if not self._used_commands[CommandSpecifier.Income]:
-            color = CharacterInfo(self._player).color
+            color = CharacterInfo(self._player.char).color
             income = sum(DistrictInfo(district).color == color for district in self._player.city)
             if income:
                 self._possible_commands[CommandSpecifier.Income].append(commands.CashIn(income))

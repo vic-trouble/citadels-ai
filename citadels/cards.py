@@ -104,14 +104,19 @@ class DistrictInfo:
 
 class CharacterInfo:
     def __init__(self, char: Character):
-        Info = namedtuple('Info', ['color'])
+        Info = namedtuple('Info', ['name', 'color'])
         info = {
-            Character.King: Info(Color.Yellow),
-            Character.Merchant: Info(Color.Green),
-            Character.Bishop: Info(Color.Blue),
-            Character.Warlord: Info(Color.Red),
-        }.get(char, None)
-        self.color = info.color if info else None
+            Character.Assassin: Info('Assassin', None),
+            Character.Thief: Info('Thief', None),
+            Character.Magician: Info('Magician', None),
+            Character.King: Info('King', Color.Yellow),
+            Character.Bishop: Info('Bishop', Color.Blue),
+            Character.Merchant: Info('Merchant', Color.Green),
+            Character.Architect: Info('Architect', None),
+            Character.Warlord: Info('Warlord', Color.Red),
+        }[char]
+        self.name = info.name
+        self.color = info.color
 
 
 def standard_chars():
@@ -187,3 +192,6 @@ class Deck:
 
     def __iter__(self):
         return iter(self._cards)
+
+    def __getitem__(self, item):
+        return self._cards[item]
