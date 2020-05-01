@@ -19,15 +19,17 @@ class DummyPlayerController(PlayerController):
 class SpyPlayerController(DummyPlayerController):
     def __init__(self):
         super().__init__()
-        self.possible_actions = []
+        self.possible_actions = None
+        self.possible_abilities = None
 
     def pick_char(self, char_deck: Deck, player: Player, game: Game):
         return char_deck.cards[0]
 
     def take_turn(self, player: Player, game: Game, sink: CommandsSink):
-        self.possible_actions = sink.possible_actions
+        self.possible_actions = list(sink.possible_actions)
+        self.possible_abilities = list(sink.possible_abilities)
         self.game = game
-        sink.execute(self.possible_actions[0])
+        sink.end_turn()
 
 
 def test_start_game():
@@ -121,6 +123,7 @@ def test_take_turns():
 
     # assert
     assert len(spy_controller.possible_actions) == 2
+    assert spy_controller.possible_abilities
 
 
 def test_privates_are_not_exposed_to_bot():
@@ -153,3 +156,61 @@ def test_privates_are_not_exposed_to_bot():
     assert all(bool(district) for district in another_player.city)  # TODO: not verifiable
     assert another_player.gold
     assert not hasattr(another_player, 'game')
+
+
+def test_killed_char_misses_turn():
+    # arrange
+    characters = Deck(standard_chars())
+    districts = Deck(simple_districts())
+
+    game = Game(characters, districts)
+
+    assassing = game.add_player('Player1')
+    victim = game.add_player('Player2')
+
+    game_controller = GameController(game)
+    game_controller.set_player_controller(assassing, DummyPlayerController())
+    game_controller.set_player_controller(victim, victim_controller := SpyPlayerController())
+
+    game_controller.start_game()
+    game_controller.start_turn()
+
+    assassing.char = Character.Assassin
+    victim.char = Character.King
+    game.turn.killed_char = Character.King
+
+    # act
+    game_controller.take_turns()
+
+    # assert
+    assert not victim_controller.possible_actions
+
+
+def test_thief_takes_gold_from_robbed_char():
+    # arrange
+    characters = Deck(standard_chars())
+    districts = Deck(simple_districts())
+
+    game = Game(characters, districts)
+
+    thief = game.add_player('Player1')
+    victim = game.add_player('Player2')
+    victim.cash_in(10)
+
+    game_controller = GameController(game)
+    game_controller.set_player_controller(thief, DummyPlayerController())
+    game_controller.set_player_controller(victim, DummyPlayerController())
+
+    game_controller.start_game()
+    game_controller.start_turn()
+
+    thief.char = Character.Thief
+    victim.char = Character.King
+    game.turn.robbed_char = Character.King
+
+    # act
+    game_controller.take_turns()
+
+    # assert
+    assert thief.gold == 10 + 2 + 2
+    assert victim.gold == 0

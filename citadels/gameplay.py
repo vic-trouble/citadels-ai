@@ -1,8 +1,8 @@
 from collections import defaultdict
 from enum import Enum, auto
 
-from citadels.cards import Card, Character, Deck
-from citadels.commands import Command
+from citadels.cards import Card, Character, CharacterInfo, Deck, DistrictInfo
+from citadels import commands
 from citadels.game import Game, GameError, Player
 from citadels import rules
 from citadels.shadow import ShadowGame, ShadowPlayer
@@ -52,14 +52,39 @@ class CommandsSink:
     def end_turn(self):
         self._done = True
 
-    def execute(self, command: Command):
+    def execute(self, command: commands.Command):
         command.apply(self._player, self._game)
         self._used_commands[command.specifier].append(command)
         self._update()
 
     def _update(self):
-        self._possible_commands[CommandSpecifier.Action] = rules.possible_actions() if \
-            not self._used_commands[CommandSpecifier.Action] else []
+        self._possible_commands.clear()
+
+        if not self._used_commands[CommandSpecifier.Action]:
+            self._possible_commands[CommandSpecifier.Action] = rules.possible_actions()
+
+        if not self._used_commands[CommandSpecifier.Ability]:
+            char_workflow = rules.CharacterWorkflow(self._player.char)
+            self._possible_commands[CommandSpecifier.Ability] = char_workflow.abilities
+
+        # BUILD
+        if len(self._used_commands[CommandSpecifier.Build]) < rules.how_many_districts_can_build(self._player):
+            for district in self._player.hand:
+                if rules.can_be_built(district, self._player):
+                    if rules.how_much_cost_to_build(district, self._player) <= self._player.gold:
+                        self._possible_commands[CommandSpecifier.Build].append(commands.Build(district))
+
+        # INCOME
+        if not self._used_commands[CommandSpecifier.Income]:
+            color = CharacterInfo(self._player).color
+            income = sum(DistrictInfo(district).color == color for district in self._player.city)
+            if income:
+                self._possible_commands[CommandSpecifier.Income].append(commands.CashIn(income))
+
+        # FINAL
+        if not self._used_commands[CommandSpecifier.Final]:
+            char_workflow = rules.CharacterWorkflow(self._player.char)
+            self._possible_commands[CommandSpecifier.Final] = char_workflow.final
 
         self._assign_specifiers()
 
@@ -103,6 +128,12 @@ class GameController:
         if len(game.players) < 2:
             raise GameError('not enough players')
 
+        # CHAR-DECK
+        game._orig_chars.shuffle()
+
+        # DISTRICT-DECK
+        game.districts.shuffle()
+
         # START-CROWN
         if not game.crowned_player:
             game.crowned_player = game.players[0]
@@ -134,7 +165,7 @@ class GameController:
             game.turn.unused_chars.append(card)
 
         # TURN-PICK-FIRST, TURN-PICK
-        for player in game.players.by_char_selection():
+        for player in game.players.order_by_char_selection():
             controller = self.player_controller(player)
             selected_char = controller.pick_char(game.characters, ShadowPlayer(player), ShadowGame(game))
             game.characters.take(selected_char)
@@ -145,9 +176,34 @@ class GameController:
             game.turn.unused_chars.append(Card(game.characters.take_from_top()).facedown)
 
     def take_turns(self):
+        game = self._game
+
         # TURN-CALL
-        for player in self._game.players.by_take_turn():
+        for player in game.players.order_by_take_turn():
+            # KILLED
+            if player.char == game.turn.killed_char:
+                continue
+
+            # ROBBED
+            if player.char == game.turn.robbed_char:
+                thief = game.players.find_by_char(Character.Thief)
+                thief.cash_in(player.gold)
+                player.withdraw(player.gold)
+
+            # KING-CROWNING
+            if player.char == Character.King:
+                game.crowned_player = player
+
             player_controller = self.player_controller(player)
-            command_sink = CommandsSink(player, self._game)
+            command_sink = CommandsSink(player, game)
             while not command_sink.done:
-                player_controller.take_turn(ShadowPlayer(player), ShadowGame(self._game), command_sink)
+                action_available = bool(command_sink.possible_actions)
+                player_controller.take_turn(ShadowPlayer(player, me=True), ShadowGame(game), command_sink)
+                if action_available and not command_sink.possible_actions:
+                    command = rules.CharacterWorkflow(player.char).after_action_command
+                    if command:
+                        command.apply(player, game)
+
+        # KING-KILLED
+        if game.turn.killed_char == Character.King:
+            game.crowned_player = game.players.find_by_char(Character.King)

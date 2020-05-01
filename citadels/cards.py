@@ -1,3 +1,4 @@
+from collections import namedtuple
 from enum import Enum, IntEnum, auto
 from itertools import chain
 import random
@@ -12,6 +13,10 @@ class Character(IntEnum):
     Merchant = auto()
     Architect = auto()
     Warlord = auto()
+
+
+all_chars = frozenset([Character.Assassin, Character.Thief, Character.Magician, Character.King,
+                       Character.Bishop, Character.Merchant, Character.Architect, Character.Warlord])
 
 
 class District(Enum):
@@ -67,30 +72,60 @@ class Color(Enum):
     Purple = auto()
 
 
+class DistrictInfo:
+    def __init__(self, district: District):
+        Info = namedtuple('Info', ['color', 'cost', 'mul'])
+        info = {
+            District.Watchtower: Info(Color.Red, 1, 3),
+            District.Prison: Info(Color.Red, 2, 3),
+            District.Battlefield: Info(Color.Red, 3, 3),
+            District.Fortress: Info(Color.Red, 4, 2),
+
+            District.Tavern: Info(Color.Green, 1, 5),
+            District.TradingPost: Info(Color.Green, 2, 3),
+            District.Market: Info(Color.Green, 2, 4),
+            District.Docks: Info(Color.Green, 3, 3),
+            District.Harbor: Info(Color.Green, 4, 3),
+            District.TownHall: Info(Color.Green, 5, 2),
+
+            District.Temple: Info(Color.Blue, 1, 3),
+            District.Church: Info(Color.Blue, 2, 3),
+            District.Monastery: Info(Color.Blue, 3, 3),
+            District.Cathedral: Info(Color.Blue, 5, 2),
+
+            District.Manor: Info(Color.Yellow, 3, 5),
+            District.Castle: Info(Color.Yellow, 4, 4),
+            District.Palace: Info(Color.Yellow, 5, 3),
+        }[district]
+        self.color = info.color
+        self.cost = info.cost
+        self.mul = info.mul
+
+
+class CharacterInfo:
+    def __init__(self, char: Character):
+        Info = namedtuple('Info', ['color'])
+        info = {
+            Character.King: Info(Color.Yellow),
+            Character.Merchant: Info(Color.Green),
+            Character.Bishop: Info(Color.Blue),
+            Character.Warlord: Info(Color.Red),
+        }.get(char, None)
+        self.color = info.color if info else None
+
+
 def standard_chars():
     return [Character.Assassin, Character.Thief, Character.Magician, Character.King,
             Character.Bishop, Character.Merchant, Character.Architect, Character.Warlord]
 
 
 def simple_districts():
-    cards = {District.TownHall: 2,
-             District.Watchtower: 3,
-             District.Prison: 3,
-             District.TradingPost: 3,
-             District.Battlefield: 3,
-             District.Docks: 3,
-             District.Temple: 3,
-             District.Harbor: 3,
-             District.Church: 3,
-             District.Palace: 3,
-             District.Monastery: 3,
-             District.Market: 4,
-             District.Fortress: 2,
-             District.Castle: 4,
-             District.Cathedral: 2,
-             District.Tavern: 5,
-             District.Manor: 5}
-    return list(chain.from_iterable([district] * mul for district, mul in cards.items()))
+    cards = [District.TownHall, District.Watchtower, District.Prison, District.TradingPost,
+             District.Battlefield, District.Docks, District.Temple, District.Harbor,
+             District.Church, District.Palace, District.Monastery, District.Market,
+             District.Fortress, District.Castle, District.Cathedral, District.Tavern,
+             District.Manor]
+    return list(chain.from_iterable([district] * DistrictInfo(district).mul for district in cards))
 
 
 class Card:
@@ -110,6 +145,13 @@ class Card:
 
     def __bool__(self):
         return not self._locked
+
+    def __eq__(self, other):
+        if not isinstance(other, Card):
+            return False
+        if self._locked != other._locked:
+            return False
+        return self._payload == other._payload if not self._locked else True
 
 
 class Deck:

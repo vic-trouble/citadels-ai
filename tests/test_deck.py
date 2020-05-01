@@ -24,7 +24,7 @@ def test_put_on_bottom():
     assert deck.cards == [0, 1, 2, 3, 4]
 
 
-def test_shuffle():
+def test_shuffle():  # TODO: it fails once in a while
     # arrange
     deck = Deck([0, 1, 2, 3])
 

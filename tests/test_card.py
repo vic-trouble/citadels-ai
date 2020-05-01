@@ -54,3 +54,13 @@ def test_card_should_wrap_primitive_type():
 
     # assert
     assert not card
+
+
+def test_card_faceup_equality():
+    assert Card(42) == Card(42)
+    assert Card(42) != Card(43)
+
+
+def test_card_facedown_equality():
+    assert Card(42).facedown != Card(42)
+    assert Card(42).facedown == Card(43).facedown

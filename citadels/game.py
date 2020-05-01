@@ -49,8 +49,8 @@ class Player:
         self._id = player_id
         self._game = game
         self._char = None
-        self._hand = []
-        self._city = []
+        self.hand = []
+        self.city = []
 
     @property
     def player_id(self):
@@ -66,9 +66,9 @@ class Player:
         """ Amount of player's gold """
         return self._bank_account.balance
 
-    @property
-    def hand(self):
-        return self._hand
+    #@property
+    #def hand(self):
+    #    return self._hand
 
     def cash_in(self, amount):
         """ Give some gold """
@@ -89,9 +89,9 @@ class Player:
     def char(self, value):
         self._char = value
 
-    @property
-    def city(self):
-        return list(self._city)
+    #@property
+    #def city(self):
+    #    return list(self._city)
 
 
 class Turn:
@@ -123,7 +123,7 @@ class PlayersProxy:
     def __getitem__(self, item):
         return self._players[item]
 
-    def by_char_selection(self):
+    def order_by_char_selection(self):
         """ Players in order of character selection """
         index = self.crowned_index
         if index == -1:
@@ -131,7 +131,7 @@ class PlayersProxy:
         else:
             return self._players[index:] + self._players[:index]
 
-    def by_take_turn(self):
+    def order_by_take_turn(self):
         """ Players in order of making their turn """
         return list(sorted(self._players, key=lambda p: p.char))
 
@@ -143,6 +143,14 @@ class PlayersProxy:
     def crowned_index(self):
         """ Index of the crowned player """
         return self._players.index(self._crowned_player) if self._crowned_player else -1
+
+    def find_by_id(self, player_id):
+        """ Return player with given id or None """
+        return next((p for p in self._players if p.player_id == player_id), None)
+
+    def find_by_char(self, char):
+        """ Return player that is a given char or None """
+        return next((p for p in self._players if p.char == char), None)
 
 
 class Game:

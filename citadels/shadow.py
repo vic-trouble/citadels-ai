@@ -16,13 +16,22 @@ class ShadowTurn:
 class ShadowPlayer:
     """ Read-only copy of Player hiding all private info for passing into bot's controller """
 
-    def __init__(self, player: Player):
+    def __init__(self, player: Player, me=False):
         self.player_id = player.player_id
         self.gold = player.gold
         self.name = player.name
-        self.hand = [Card(district).facedown for district in player.hand]
+        self.hand = [district if me else Card(district).facedown for district in player.hand]
         self.char = player.char
         self.city = player.city
+
+    def __eq__(self, other):
+        if not isinstance(other, ShadowPlayer) and not isinstance(other, Player):
+            return False
+        return (self.player_id, self.gold, self.name, self.hand, self.char, self.city) == \
+            (other.player_id, other.gold, other.name, other.hand, other.char, other.city)
+
+    def __repr__(self):
+        return 'ShadowPlayer("{}")'.format(self.name)
 
 
 class ShadowGame:
