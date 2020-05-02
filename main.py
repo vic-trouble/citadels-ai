@@ -1,4 +1,6 @@
 from collections import OrderedDict
+from itertools import chain
+import string
 import sys
 assert sys.version_info[:2] >= (3, 7)
 
@@ -46,7 +48,27 @@ class TermPlayerController(PlayerController):
 
     def take_turn(self, player: Player, game: Game, sink: CommandsSink):
         """ Should execute commands via sink """
-        raise NotImplementedError()
+        choices = ['.']
+        help = [('.', 'End turn')]
+        # if sink.possible_income:
+        #     choices.append('i')
+        #     help.append(('i', 'Collect taxes'))
+        # if sink.possible_actions:
+        #     choices.append('a')
+        #     help.append(('a', 'Take action'))
+        # if sink.possible_abilities:
+        #     choices.append('b', 'Use ability')
+        # if sink.possible_builds:
+        #     choices.append('')
+        commands = {'.': lambda: sink.end_turn()}
+        for command in sink.available_now:
+            all_marks = chain(string.ascii_uppercase, string.ascii_lowercase, string.digits, string.punctuation)
+            mark = next(iter(m for m in all_marks if m not in commands))
+            commands[mark] = lambda: sink.execute(command)
+            choices.append(mark)
+            help.append((mark, command.help))
+        inp = dialog('Your turn', choices=choices, help=help)
+        commands[inp]()
 
 
 def main():

@@ -1,7 +1,4 @@
-"""
-TODO:
-- factor our fixtures
-"""
+import pytest
 
 from citadels.cards import Character, standard_chars, simple_districts
 from citadels.game import Deck, Game, Player
@@ -32,13 +29,15 @@ class SpyPlayerController(DummyPlayerController):
         sink.end_turn()
 
 
-def test_start_game():
-    # arrange
+@pytest.fixture
+def game():
     characters = Deck(standard_chars())
     districts = Deck(simple_districts())
+    return Game(characters, districts)
 
-    game = Game(characters, districts)
 
+def test_start_game(game):
+    # arrange
     player1 = game.add_player('Player1')
     player2 = game.add_player('Player2')
 
@@ -62,13 +61,8 @@ def test_start_game():
     assert game.crowned_player == player1
 
 
-def test_pick_chars(): # TODO: fails at times
+def test_pick_chars(game): # TODO: fails at times
     # arrange
-    characters = Deck(standard_chars())
-    districts = Deck(simple_districts())
-
-    game = Game(characters, districts)
-
     player1 = game.add_player('Player1')
     player2 = game.add_player('Player2')
     game.crowned_player = player2
@@ -101,12 +95,8 @@ def test_pick_chars(): # TODO: fails at times
     assert Character.King not in game.turn.unused_chars
 
 
-def test_take_turns():
-    characters = Deck(standard_chars())
-    districts = Deck(simple_districts())
-
-    game = Game(characters, districts)
-
+def test_take_turns(game):
+    # arrange
     player1 = game.add_player('Player1')
     player2 = game.add_player('Player2')
 
@@ -123,16 +113,10 @@ def test_take_turns():
 
     # assert
     assert len(spy_controller.possible_actions) == 2
-    assert spy_controller.possible_abilities
 
 
-def test_privates_are_not_exposed_to_bot():
+def test_privates_are_not_exposed_to_bot(game):
     # arrange
-    characters = Deck(standard_chars())
-    districts = Deck(simple_districts())
-
-    game = Game(characters, districts)
-
     player1 = game.add_player('Player1')
     player2 = game.add_player('Player2')
 
@@ -158,13 +142,8 @@ def test_privates_are_not_exposed_to_bot():
     assert not hasattr(another_player, 'game')
 
 
-def test_killed_char_misses_turn():
+def test_killed_char_misses_turn(game):
     # arrange
-    characters = Deck(standard_chars())
-    districts = Deck(simple_districts())
-
-    game = Game(characters, districts)
-
     assassing = game.add_player('Player1')
     victim = game.add_player('Player2')
 
@@ -186,13 +165,8 @@ def test_killed_char_misses_turn():
     assert not victim_controller.possible_actions
 
 
-def test_thief_takes_gold_from_robbed_char():
+def test_thief_takes_gold_from_robbed_char(game):
     # arrange
-    characters = Deck(standard_chars())
-    districts = Deck(simple_districts())
-
-    game = Game(characters, districts)
-
     thief = game.add_player('Player1')
     victim = game.add_player('Player2')
     victim.cash_in(10)

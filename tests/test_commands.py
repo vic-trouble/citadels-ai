@@ -154,17 +154,31 @@ def test_destroy(game):
 
 def test_build(game):
     # arrange
-    player1 = game.add_player('Player1')
-    player1.hand = [District.Manor]
-    player1.city = []
-    player1.cash_in(10)
-
-    command = commands.Build(District.Manor)
+    player = game.add_player('Player1')
+    player.hand = [District.Manor, District.Palace]
+    player.city = []
+    player.cash_in(4)
 
     # act
-    command.apply(player1, game)
+    command = commands.Build()
+    assert command.choices(player, game) == [District.Manor]
+
+    command.select(District.Manor)
+    command.apply(player, game)
 
     # assert
-    assert player1.hand == []
-    assert player1.city == [District.Manor]
-    assert player1.gold == 7
+    assert player.hand == [District.Palace]
+    assert player.city == [District.Manor]
+    assert player.gold == 1
+
+
+def test_take_crown(game):
+    # arrange
+    player = game.add_player('Player1')
+    command = commands.TakeCrown()
+
+    # act
+    command.apply(player, game)
+
+    # assert
+    assert game.crowned_player == player

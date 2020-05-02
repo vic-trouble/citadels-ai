@@ -10,21 +10,16 @@ def possible_actions():
 
 class CharacterWorkflow:
     def __init__(self, char: Character):
+        compulsory = commands.Restriction.Compulsory
         self.abilities = {
             Character.Assassin: [commands.Kill()],
             Character.Thief: [commands.Rob()],
             Character.Magician: [commands.SwapHands(), commands.ReplaceHand()],
-            Character.Warlord: [commands.Destroy()],
+            #Character.King: [commands.TakeCrown(restriction=commands.Restriction.OnStartTurn|compulsory)], # TODO: ?
+            Character.Merchant: [commands.CashIn(1, restriction=commands.Restriction.OnAfterAction|compulsory)],  # MERCHANT-GOLD
+            Character.Architect: [commands.DrawCards(draw=2, keep=2, restriction=commands.Restriction.OnAfterAction|compulsory)],  # ARCHITECT-DRAW2
+            Character.Warlord: [commands.Destroy(restriction=commands.Restriction.OnEndTurn)],
         }.get(char, [])
-
-        self.final = {
-            Character.Warlord: [commands.Destroy()],
-        } .get(char, [])
-
-        self.after_action_command = {
-            Character.Merchant: commands.CashIn(1), # MERCHANT-GOLD
-            Character.Architect: commands.DrawCards(draw=2, keep=2), # ARCHITECT-DRAW2
-        }.get(char, None)
 
 
 def how_much_cost_to_build(district: District, player: Player):
@@ -33,7 +28,7 @@ def how_much_cost_to_build(district: District, player: Player):
 
 def how_many_districts_can_build(player: Player):
     # ARCHITECT-BUILD3
-    return player.char == 3 if Character.Architect else 1
+    return 3 if player.char == Character.Architect else 1
 
 
 def is_city_complete(player: Player):

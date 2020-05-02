@@ -13,7 +13,6 @@ class CommandSpecifier(Enum):
     Ability = auto()
     Build = auto()
     Income = auto()
-    Final = auto()
 
 
 class CommandsSink:
@@ -42,10 +41,6 @@ class CommandsSink:
         return self._possible_commands[CommandSpecifier.Income]
 
     @property
-    def possible_final(self):
-        return self._possible_commands[CommandSpecifier.Final]
-
-    @property
     def done(self):
         return self._done or not any(self._possible_commands.values())
 
@@ -55,7 +50,14 @@ class CommandsSink:
     def execute(self, command: commands.Command):
         command.apply(self._player, self._game)
         self._used_commands[command.specifier].append(command)
+        if command.restriction:
+            if command.restriction & commands.Restriction.OnEndTurn:
+                self._clear()
+                return
         self._update()
+
+    def _clear(self):
+        self._possible_commands.clear()
 
     def _update(self):
         self._possible_commands.clear()
@@ -65,14 +67,20 @@ class CommandsSink:
 
         if not self._used_commands[CommandSpecifier.Ability]:
             char_workflow = rules.CharacterWorkflow(self._player.char)
-            self._possible_commands[CommandSpecifier.Ability] = char_workflow.abilities
+            for ability in char_workflow.abilities:
+                if ability.restriction:
+                    if ability.restriction & commands.Restriction.OnAfterAction:
+                        if not self._used_commands[CommandSpecifier.Action]:
+                            continue
+                    if ability.restriction & commands.Restriction.OnEndTurn:
+                        if not self._used_commands[CommandSpecifier.Action]:
+                            continue
+                self._possible_commands[CommandSpecifier.Ability].append(ability)
 
         # BUILD
-        if len(self._used_commands[CommandSpecifier.Build]) < rules.how_many_districts_can_build(self._player):
-            for district in self._player.hand:
-                if rules.can_be_built(district, self._player):
-                    if rules.how_much_cost_to_build(district, self._player) <= self._player.gold:
-                        self._possible_commands[CommandSpecifier.Build].append(commands.Build(district))
+        if self._used_commands[CommandSpecifier.Action]:
+            if len(self._used_commands[CommandSpecifier.Build]) < rules.how_many_districts_can_build(self._player):
+                self._possible_commands[CommandSpecifier.Build].append(commands.Build())
 
         # INCOME
         if not self._used_commands[CommandSpecifier.Income]:
@@ -80,11 +88,6 @@ class CommandsSink:
             income = sum(DistrictInfo(district).color == color for district in self._player.city)
             if income:
                 self._possible_commands[CommandSpecifier.Income].append(commands.CashIn(income))
-
-        # FINAL
-        if not self._used_commands[CommandSpecifier.Final]:
-            char_workflow = rules.CharacterWorkflow(self._player.char)
-            self._possible_commands[CommandSpecifier.Final] = char_workflow.final
 
         self._assign_specifiers()
 
@@ -197,12 +200,12 @@ class GameController:
             player_controller = self.player_controller(player)
             command_sink = CommandsSink(player, game)
             while not command_sink.done:
-                action_available = bool(command_sink.possible_actions)
+                #action_available = bool(command_sink.possible_actions)
                 player_controller.take_turn(ShadowPlayer(player, me=True), ShadowGame(game), command_sink)
-                if action_available and not command_sink.possible_actions:
-                    command = rules.CharacterWorkflow(player.char).after_action_command
-                    if command:
-                        command.apply(player, game)
+                #if action_available and not command_sink.possible_actions:
+                #    command = rules.CharacterWorkflow(player.char).after_action_command
+                #    if command:
+                #        command.apply(player, game)
 
         # KING-KILLED
         if game.turn.killed_char == Character.King:
