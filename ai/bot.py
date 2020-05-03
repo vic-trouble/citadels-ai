@@ -12,12 +12,7 @@ class BotController(PlayerController):
 
     def take_turn(self, player: Player, game: Game, sink: CommandsSink):
         """ Should execute commands via sink """
-        command = None
-        for source in (sink.possible_income, sink.possible_actions, sink.possible_builds,
-                       sink.possible_abilities, sink.possible_final):
-            if source:
-                command = random.choice(source)
-                break
+        command = random.choice(list(sink.all_possible_commands))
 
         if isinstance(command, InteractiveCommand):
             while command.choices(player, game):

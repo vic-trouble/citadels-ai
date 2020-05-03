@@ -1,5 +1,6 @@
 from collections import defaultdict
 from enum import Enum, auto
+from itertools import chain
 
 from citadels.cards import Card, Character, CharacterInfo, Deck, DistrictInfo
 from citadels import commands
@@ -39,6 +40,10 @@ class CommandsSink:
     @property
     def possible_income(self):
         return self._possible_commands[CommandSpecifier.Income]
+
+    @property
+    def all_possible_commands(self):
+        return chain.from_iterable(self._possible_commands.values())
 
     @property
     def done(self):
@@ -206,12 +211,7 @@ class GameController:
             player_controller = self.player_controller(player)
             command_sink = CommandsSink(player, game)
             while not command_sink.done:
-                #action_available = bool(command_sink.possible_actions)
                 player_controller.take_turn(ShadowPlayer(player, me=True), ShadowGame(game), command_sink)
-                #if action_available and not command_sink.possible_actions:
-                #    command = rules.CharacterWorkflow(player.char).after_action_command
-                #    if command:
-                #        command.apply(player, game)
 
         # KING-KILLED
         if game.turn.killed_char == Character.King:

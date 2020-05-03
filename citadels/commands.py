@@ -55,6 +55,10 @@ class CashIn(Command):
     def __eq__(self, other):
         return isinstance(other, CashIn) and self._amount == other._amount
 
+    @property
+    def help(self):
+        return 'Take {} gold'.format(self._amount)
+
 
 class DrawCards(Command):
     def __init__(self, draw=2, keep=1, **kwargs):
@@ -71,6 +75,10 @@ class DrawCards(Command):
 
     def __eq__(self, other):
         return isinstance(other, DrawCards) and (self._draw, self._keep) == (other._draw, other._keep)
+
+    @property
+    def help(self):
+        return 'Draw {} cards'.format(self._draw) + (' ({} to keep)'.format(self._keep) if self._keep != self._draw else '')
 
 
 class Kill(InteractiveCommand):
@@ -95,6 +103,10 @@ class Kill(InteractiveCommand):
     def __eq__(self, other):
         return isinstance(other, Kill) and self._char == other._char
 
+    @property
+    def help(self):
+        return 'Kill'
+
 
 class Rob(InteractiveCommand):
     def __init__(self, **kwargs):
@@ -117,6 +129,10 @@ class Rob(InteractiveCommand):
 
     def __eq__(self, other):
         return isinstance(other, Rob) and self._char == other._char
+
+    @property
+    def help(self):
+        return 'Rob'
 
 
 class SwapHands(InteractiveCommand):
@@ -142,6 +158,10 @@ class SwapHands(InteractiveCommand):
     def __eq__(self, other):
         return isinstance(other, SwapHands) and self._target == other._target
 
+    @property
+    def help(self):
+        return 'Swap hands with another player'
+
 
 class ReplaceHand(InteractiveCommand):
     def __init__(self, **kwargs):
@@ -165,6 +185,10 @@ class ReplaceHand(InteractiveCommand):
 
     def __eq__(self, other):
         return isinstance(other, ReplaceHand) and self._cards == other._cards
+
+    @property
+    def help(self):
+        return 'Replace some cards'
 
 
 class Destroy(InteractiveCommand):
@@ -200,6 +224,10 @@ class Destroy(InteractiveCommand):
     def __eq__(self, other):
         return isinstance(other, Destroy) and (self._target, self._card) == (other._target, other._card)
 
+    @property
+    def help(self):
+        return 'Destroy district'
+
 
 class Build(InteractiveCommand):
     def __init__(self, **kwargs):
@@ -207,6 +235,7 @@ class Build(InteractiveCommand):
         self._district = None
 
     def apply(self, player: Player, game: Game):
+        assert self._district
         cost = rules.how_much_cost_to_build(self._district, player)
         player.withdraw(cost)
         player.hand.remove(self._district)
@@ -219,6 +248,9 @@ class Build(InteractiveCommand):
         return isinstance(other, Build) and self._district == other._district
 
     def choices(self, player: Player, game: Game):
+        if self._district:
+            return []
+
         r = []
         for district in player.hand:
             if rules.can_be_built(district, player):
@@ -229,6 +261,10 @@ class Build(InteractiveCommand):
     def select(self, choice):
         assert not self._district
         self._district = choice
+
+    @property
+    def help(self):
+        return 'Build district'
 
 
 class TakeCrown(Command):
@@ -244,3 +280,7 @@ class TakeCrown(Command):
 
     def __eq__(self, other):
         return isinstance(other, TakeCrown)
+
+    @property
+    def help(self):
+        return 'Take crown'

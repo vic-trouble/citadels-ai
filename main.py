@@ -6,6 +6,7 @@ assert sys.version_info[:2] >= (3, 7)
 
 from ai.bot import BotController
 from citadels.cards import Character, CharacterInfo, all_chars, simple_districts, standard_chars
+from citadels import commands
 from citadels.game import Deck, Game, Player
 from citadels.gameplay import CommandsSink, GameController, PlayerController
 from term.tabulate import tabulate
@@ -48,27 +49,37 @@ class TermPlayerController(PlayerController):
 
     def take_turn(self, player: Player, game: Game, sink: CommandsSink):
         """ Should execute commands via sink """
+        def make_exec(command: commands.Command):
+            def do_exec(command: commands.Command):
+                if isinstance(command, commands.InteractiveCommand):
+                    all_marks = chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, string.punctuation)
+                    while command.choices(player, game):
+                        ch_choices = []
+                        ch_help = []
+                        selection = {}
+                        for choice in command.choices(player, game):
+                            mark = next(iter(m for m in all_marks if m not in ch_choices))
+                            selection[mark] = choice
+                            ch_choices.append(mark)
+                            ch_help.append((mark, str(choice)))
+                        ch_inp = dialog('Select', choices=ch_choices, help=OrderedDict(ch_help))
+                        command.select(selection[ch_inp])
+                sink.execute(command)
+
+            return lambda: do_exec(command)
+
         choices = ['.']
         help = [('.', 'End turn')]
-        # if sink.possible_income:
-        #     choices.append('i')
-        #     help.append(('i', 'Collect taxes'))
-        # if sink.possible_actions:
-        #     choices.append('a')
-        #     help.append(('a', 'Take action'))
-        # if sink.possible_abilities:
-        #     choices.append('b', 'Use ability')
-        # if sink.possible_builds:
-        #     choices.append('')
-        commands = {'.': lambda: sink.end_turn()}
-        for command in sink.available_now:
-            all_marks = chain(string.ascii_uppercase, string.ascii_lowercase, string.digits, string.punctuation)
-            mark = next(iter(m for m in all_marks if m not in commands))
-            commands[mark] = lambda: sink.execute(command)
+        cmds = {'.': lambda: sink.end_turn()}
+
+        for command in sink.all_possible_commands:
+            all_marks = chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, string.punctuation)
+            mark = next(iter(m for m in all_marks if m not in cmds))
+            cmds[mark] = make_exec(command)
             choices.append(mark)
             help.append((mark, command.help))
-        inp = dialog('Your turn', choices=choices, help=help)
-        commands[inp]()
+        inp = dialog('Your turn', choices=choices, help=OrderedDict(help))
+        cmds[inp]()
 
 
 def main():
