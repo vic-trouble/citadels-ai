@@ -1,6 +1,7 @@
 from enum import IntFlag, auto
+from itertools import chain
 
-from citadels.cards import Character, District, all_chars
+from citadels.cards import Character, all_chars
 from citadels.game import Game, Player
 from citadels import rules
 
@@ -68,7 +69,7 @@ class DrawCards(Command):
 
     def apply(self, player: Player, game: Game):
         for _ in range(self._draw):
-            player.hand.append(game.districts.take_from_top())
+            player.take_card(game.districts.take_from_top())
 
     def __repr__(self):
         return 'DrawCards(draw={draw}, keep={keep})'.format(draw=self._draw, keep=self._keep)
@@ -87,7 +88,10 @@ class Kill(InteractiveCommand):
         self._char = None
 
     def choices(self, player: Player, game: Game):
-        return [char for char in all_chars if char != Character.Assassin] if not self._char else []
+        if self._char:
+            return []
+        else:
+            return [char for char in all_chars if char != Character.Assassin and char not in game.turn.unused_chars]
 
     def select(self, choice):
         self._char = choice
@@ -114,7 +118,11 @@ class Rob(InteractiveCommand):
         self._char = None
 
     def choices(self, player: Player, game: Game):
-        return [char for char in all_chars if char not in (Character.Assassin, game.turn.killed_char)] if not self._char else []
+        if self._char:
+            return []
+        else:
+            cant_rob = chain.from_iterable((Character.Thief, Character.Assassin, game.turn.killed_char), game.turn.unused_chars)
+            return [char for char in all_chars if char not in cant_rob]
 
     def select(self, choice):
         self._char = choice
@@ -150,7 +158,13 @@ class SwapHands(InteractiveCommand):
         assert self._target
         player1 = game.players.find_by_id(player.player_id)
         player2 = game.players.find_by_id(self._target.player_id)
-        player1.hand, player2.hand = player2.hand, player1.hand
+        p1_cards = tuple(player1.hand)
+        for card in player2.hand:
+            player2.remove_card(card)
+            player1.take_card(card)
+        for card in p1_cards:
+            player1.remove_card(card)
+            player2.take_card(card)
 
     def __repr__(self):
         return 'SwapHands({})'.format(self._target)
@@ -176,9 +190,9 @@ class ReplaceHand(InteractiveCommand):
 
     def apply(self, player: Player, game: Game):
         for card in self._cards:
-            player.hand.remove(card)
+            player.remove_card(card)
             game.districts.put_on_bottom(card)
-            player.hand.append(game.districts.take_from_top())
+            player.take_card(game.districts.take_from_top())
 
     def __repr__(self):
         return 'ReplaceHand({})'.format(self._cards)
@@ -216,7 +230,7 @@ class Destroy(InteractiveCommand):
     def apply(self, player: Player, game: Game):
         target = game.players.find_by_id(self._target.player_id)
         assert not rules.is_city_complete(target)
-        target.city.remove(self._card)
+        target.destroy_district(self._card)
 
     def __repr__(self):
         return 'Destroy(target={target}, card={card})'.format(target=self._target, card=self._card)
@@ -238,8 +252,8 @@ class Build(InteractiveCommand):
         assert self._district
         cost = rules.how_much_cost_to_build(self._district, player)
         player.withdraw(cost)
-        player.hand.remove(self._district)
-        player.city.append(self._district)
+        player.remove_card(self._district)
+        player.build_district(self._district)
 
     def __repr__(self):
         return 'Build({})'.format(self._district)

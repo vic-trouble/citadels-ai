@@ -84,11 +84,8 @@ def test_rob(player, game):
 
 def test_swap_hands(game):
     # arrange
-    player1 = game.add_player('Player1')
-    player1.hand = [District.Manor]
-
-    player2 = game.add_player('Player2')
-    player2.hand = [District.Tavern, District.Cathedral]
+    player1 = game.add_player('Player1', hand=[District.Manor])
+    player2 = game.add_player('Player2', hand=[District.Tavern, District.Cathedral])
 
     command = commands.SwapHands()
 
@@ -102,13 +99,13 @@ def test_swap_hands(game):
     command.apply(player1, game)
 
     # assert
-    assert player1.hand == [District.Tavern, District.Cathedral]
-    assert player2.hand == [District.Manor]
+    assert player1.hand == (District.Tavern, District.Cathedral,)
+    assert player2.hand == (District.Manor,)
 
 
-def test_replace_hands(player, game):
+def test_replace_hands(game):
     # arrange
-    player.hand = [District.Cathedral, District.Tavern]
+    player = game.add_player('Player', hand=[District.Cathedral, District.Tavern])
 
     command = commands.ReplaceHand()
 
@@ -130,11 +127,8 @@ def test_replace_hands(player, game):
 
 def test_destroy(game):
     # arrange
-    player1 = game.add_player('Player1')
-    player1.city = [District.Manor]
-
-    player2 = game.add_player('Player2')
-    player2.city = [District.Tavern, District.Cathedral]
+    player1 = game.add_player('Player1', city=[District.Manor])
+    player2 = game.add_player('Player2', city=[District.Tavern, District.Cathedral])
 
     command = commands.Destroy()
 
@@ -149,14 +143,12 @@ def test_destroy(game):
     command.apply(player1, game)
 
     # assert
-    assert player2.city == [District.Cathedral]
+    assert player2.city == (District.Cathedral,)
 
 
 def test_build(game):
     # arrange
-    player = game.add_player('Player1')
-    player.hand = [District.Manor, District.Palace]
-    player.city = []
+    player = game.add_player('Player1', hand=[District.Manor, District.Palace])
     player.cash_in(4)
 
     # act
@@ -167,8 +159,8 @@ def test_build(game):
     command.apply(player, game)
 
     # assert
-    assert player.hand == [District.Palace]
-    assert player.city == [District.Manor]
+    assert player.hand == (District.Palace,)
+    assert player.city == (District.Manor,)
     assert player.gold == 1
 
 

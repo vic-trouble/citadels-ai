@@ -74,29 +74,30 @@ class Color(Enum):
 
 class DistrictInfo:
     def __init__(self, district: District):
-        Info = namedtuple('Info', ['color', 'cost', 'mul'])
+        Info = namedtuple('Info', ['name', 'color', 'cost', 'mul'])
         info = {
-            District.Watchtower: Info(Color.Red, 1, 3),
-            District.Prison: Info(Color.Red, 2, 3),
-            District.Battlefield: Info(Color.Red, 3, 3),
-            District.Fortress: Info(Color.Red, 4, 2),
+            District.Watchtower: Info('Watchtower', Color.Red, 1, 3),
+            District.Prison: Info('Prison', Color.Red, 2, 3),
+            District.Battlefield: Info('Battlefield', Color.Red, 3, 3),
+            District.Fortress: Info('Fortress', Color.Red, 4, 2),
 
-            District.Tavern: Info(Color.Green, 1, 5),
-            District.TradingPost: Info(Color.Green, 2, 3),
-            District.Market: Info(Color.Green, 2, 4),
-            District.Docks: Info(Color.Green, 3, 3),
-            District.Harbor: Info(Color.Green, 4, 3),
-            District.TownHall: Info(Color.Green, 5, 2),
+            District.Tavern: Info('Tavern', Color.Green, 1, 5),
+            District.TradingPost: Info('Trading Post', Color.Green, 2, 3),
+            District.Market: Info('Market', Color.Green, 2, 4),
+            District.Docks: Info('Docks', Color.Green, 3, 3),
+            District.Harbor: Info('Harbor', Color.Green, 4, 3),
+            District.TownHall: Info('Town Hall', Color.Green, 5, 2),
 
-            District.Temple: Info(Color.Blue, 1, 3),
-            District.Church: Info(Color.Blue, 2, 3),
-            District.Monastery: Info(Color.Blue, 3, 3),
-            District.Cathedral: Info(Color.Blue, 5, 2),
+            District.Temple: Info('Temple', Color.Blue, 1, 3),
+            District.Church: Info('Church', Color.Blue, 2, 3),
+            District.Monastery: Info('Monastery', Color.Blue, 3, 3),
+            District.Cathedral: Info('Cathedral', Color.Blue, 5, 2),
 
-            District.Manor: Info(Color.Yellow, 3, 5),
-            District.Castle: Info(Color.Yellow, 4, 4),
-            District.Palace: Info(Color.Yellow, 5, 3),
+            District.Manor: Info('Manor', Color.Yellow, 3, 5),
+            District.Castle: Info('Castle', Color.Yellow, 4, 4),
+            District.Palace: Info('Palace', Color.Yellow, 5, 3),
         }[district]
+        self.name = info.name
         self.color = info.color
         self.cost = info.cost
         self.mul = info.mul
@@ -130,7 +131,7 @@ def simple_districts():
              District.Church, District.Palace, District.Monastery, District.Market,
              District.Fortress, District.Castle, District.Cathedral, District.Tavern,
              District.Manor]
-    return list(chain.from_iterable([district] * DistrictInfo(district).mul for district in cards))
+    return tuple(chain.from_iterable([district] * DistrictInfo(district).mul for district in cards))
 
 
 class Card:
@@ -178,7 +179,7 @@ class Deck:
 
     @property
     def cards(self):
-        return list(self._cards)
+        return tuple(self._cards)
 
     def take_random(self):
         return self._cards.pop(random.randint(0, len(self._cards)-1))

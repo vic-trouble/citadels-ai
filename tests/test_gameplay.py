@@ -10,23 +10,28 @@ class DummyPlayerController(PlayerController):
         return Character.King if Character.King in char_deck.cards else char_deck.cards[0]
 
     def take_turn(self, player: Player, game: Game, sink: CommandsSink):
-        sink.end_turn()
+        if sink.possible_actions:
+            sink.execute(sink.possible_actions[0])
+        else:
+            sink.end_turn()
 
 
-class SpyPlayerController(DummyPlayerController):
+class SpyPlayerController:
     def __init__(self):
-        super().__init__()
+        self.game = None
         self.possible_actions = None
-        self.possible_abilities = None
 
     def pick_char(self, char_deck: Deck, player: Player, game: Game):
         return char_deck.cards[0]
 
     def take_turn(self, player: Player, game: Game, sink: CommandsSink):
-        self.possible_actions = list(sink.possible_actions)
-        self.possible_abilities = list(sink.possible_abilities)
         self.game = game
-        sink.end_turn()
+        if not self.possible_actions:
+            self.possible_actions = list(sink.possible_actions)
+        if sink.possible_actions:
+            sink.execute(sink.possible_actions[0])
+        else:
+            sink.end_turn()
 
 
 @pytest.fixture
@@ -182,9 +187,13 @@ def test_thief_takes_gold_from_robbed_char(game):
     victim.char = Character.King
     game.turn.robbed_char = Character.King
 
+    thief_gold = thief.gold
+    victim_gold = victim.gold
+
     # act
     game_controller.take_turns()
 
     # assert
-    assert thief.gold == 10 + 2 + 2
-    assert victim.gold == 0
+    turn_income = 2
+    assert thief.gold == thief_gold + victim_gold + turn_income
+    assert victim.gold == turn_income

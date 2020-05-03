@@ -5,7 +5,7 @@ import sys
 assert sys.version_info[:2] >= (3, 7)
 
 from ai.bot import BotController
-from citadels.cards import Character, CharacterInfo, all_chars, simple_districts, standard_chars
+from citadels.cards import Character, CharacterInfo, Color, District, DistrictInfo, all_chars, simple_districts, standard_chars
 from citadels import commands
 from citadels.game import Deck, Game, Player
 from citadels.gameplay import CommandsSink, GameController, PlayerController
@@ -41,14 +41,37 @@ def dialog(prolog, choices=None, help=None):
 
 
 class TermPlayerController(PlayerController):
+    @staticmethod
+    def help_str(val):
+        if isinstance(val, Character):
+            info = CharacterInfo(val)
+            if info.color:
+                return '{name} ({color})'.format(name=info.name, color=TermPlayerController.help_str(info.color))
+            else:
+                return info.name
+        elif isinstance(val, District):
+            info = DistrictInfo(val)
+            return '{name} ({cost} {color})'.format(name=info.name, cost=info.cost, color=TermPlayerController.help_str(info.color))
+        elif isinstance(val, Color):
+            return {
+                Color.Red: 'R',
+                Color.Blue: 'B',
+                Color.Green: 'G',
+                Color.Yellow: 'Y',
+                Color.Purple: 'P',
+            }[val]
+        else:
+            return str(val)
+
     def pick_char(self, char_deck: Deck, player: Player, game: Game):
         """ Should return selected char card """
         choices = ''.join(str(int(ch)) for ch in all_chars if ch in char_deck)
-        help = OrderedDict({str(int(ch)): CharacterInfo(ch).name for ch in all_chars if ch in char_deck})
+        help = OrderedDict({str(int(ch)): TermPlayerController.help_str(ch) for ch in all_chars if ch in char_deck})
         return Character(int(dialog('Pick a character for this round', choices=choices, help=help)))
 
     def take_turn(self, player: Player, game: Game, sink: CommandsSink):
         """ Should execute commands via sink """
+
         def make_exec(command: commands.Command):
             def do_exec(command: commands.Command):
                 if isinstance(command, commands.InteractiveCommand):
@@ -61,7 +84,7 @@ class TermPlayerController(PlayerController):
                             mark = next(iter(m for m in all_marks if m not in ch_choices))
                             selection[mark] = choice
                             ch_choices.append(mark)
-                            ch_help.append((mark, str(choice)))
+                            ch_help.append((mark, TermPlayerController.help_str(choice)))
                         ch_inp = dialog('Select', choices=ch_choices, help=OrderedDict(ch_help))
                         command.select(selection[ch_inp])
                 sink.execute(command)
@@ -82,6 +105,50 @@ class TermPlayerController(PlayerController):
         cmds[inp]()
 
 
+class TermGamePlayListener:
+    def __init__(self, game: Game):
+        self._game = game
+
+    def player_added(self, player: Player):
+        print('{} has joined'.format(player.name))
+
+    def player_crowned(self, player: Player):
+        print('{} is the new King now!'.format(player.name))
+
+    def murder_announced(self, char: Character):
+        print('{} is gonna be killed!'.format(CharacterInfo(char).name))
+
+    def theft_announced(self, char: Character):
+        print('{} is gonna be robbed!'.format(CharacterInfo(char).name))
+
+    def player_cashed_in(self, player: Player, amount: int):
+        print('{plr} has taken {amount} gold ({total} in total)'.format(plr=player.name, amount=amount, total=player.gold))
+
+    def player_withdrawn(self, player: Player, amount: int):
+        print('{plr} has paid {amount} gold (left with {total})'.format(plr=player.name, amount=amount, total=player.gold))
+
+    def player_picked_char(self, player: Player, char: Character):
+        print('{plr} is the {char}'.format(plr=player.name, char=CharacterInfo(char).name))
+
+    def player_taken_card(self, player: Player, district: District):
+        print('{plr} has taken {card} card'.format(plr=player.name, card=DistrictInfo(district).name))
+
+    def player_removed_card(self, player: Player, district: District):
+        print('{plr} has removed {card} card'.format(plr=player.name, card=DistrictInfo(district).name))
+
+    def player_built_district(self, player: Player, district: District):
+        print('{plr} has built {card}'.format(plr=player.name, card=DistrictInfo(district).name))
+
+    def player_lost_district(self, player: Player, district: District):
+        print('{plr} has lost {card}'.format(plr=player.name, card=DistrictInfo(district).name))
+
+    def turn_started(self):
+        print('New round starts!')
+        unusable_chars = [CharacterInfo(char).name for char in self._game.turn.unused_chars if char]
+        if unusable_chars:
+            print('Unusable chars: {}'.format(', '.join(unusable_chars)))
+
+
 def main():
     num_players = 2
     name = 'V'
@@ -93,6 +160,8 @@ def main():
 
     game = Game(Deck(standard_chars()), Deck(simple_districts()))
     game_controller = GameController(game)
+    game_controller.add_listener(TermGamePlayListener(game))
+
     player = game.add_player(name)
     game_controller.set_player_controller(player, TermPlayerController())
     for i in range(num_players - 1):

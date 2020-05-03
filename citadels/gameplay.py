@@ -2,9 +2,9 @@ from collections import defaultdict
 from enum import Enum, auto
 from itertools import chain
 
-from citadels.cards import Card, Character, CharacterInfo, Deck, DistrictInfo
+from citadels.cards import Card, Character, CharacterInfo, Deck, District, DistrictInfo
 from citadels import commands
-from citadels.game import Game, GameError, Player
+from citadels.game import EventSource, Game, GameError, Player
 from citadels import rules
 from citadels.shadow import ShadowGame, ShadowPlayer
 
@@ -27,19 +27,19 @@ class CommandsSink:
 
     @property
     def possible_actions(self):
-        return self._possible_commands[CommandSpecifier.Action]
+        return tuple(self._possible_commands[CommandSpecifier.Action])
 
     @property
     def possible_abilities(self):
-        return self._possible_commands[CommandSpecifier.Ability]
+        return tuple(self._possible_commands[CommandSpecifier.Ability])
 
     @property
     def possible_builds(self):
-        return self._possible_commands[CommandSpecifier.Build]
+        return tuple(self._possible_commands[CommandSpecifier.Build])
 
     @property
     def possible_income(self):
-        return self._possible_commands[CommandSpecifier.Income]
+        return tuple(self._possible_commands[CommandSpecifier.Income])
 
     @property
     def all_possible_commands(self):
@@ -123,15 +123,56 @@ class GamePlayConfig:
         self.turn_unused_faceup_chars = 1
 
 
-class GameController:
+class GamePlayEvents:
+    def player_added(self, player: Player):
+        pass
+
+    def player_crowned(self, player: Player):
+        pass
+
+    def murder_announced(self, char: Character):
+        pass
+
+    def theft_announced(self, char: Character):
+        pass
+
+    def player_cashed_in(self, player: Player, amount: int):
+        pass
+
+    def player_withdrawn(self, player: Player, amount: int):
+        pass
+
+    def player_picked_char(self, player: Player, char: Character):
+        pass
+
+    def player_taken_card(self, player: Player, district: District):
+        pass
+
+    def player_removed_card(self, player: Player, district: District):
+        pass
+
+    def player_built_district(self, player: Player, district: District):
+        pass
+
+    def player_lost_district(self, player: Player, district: District):
+        pass
+
+    def turn_started(self):
+        pass
+
+
+class GameController(EventSource):
     def __init__(self, game: Game, config=None):
+        super().__init__()
         self._game = game
+        self._game.add_listener(self)
         self._config = config or GamePlayConfig()
         self._player_controllers = {}
 
     def set_player_controller(self, player: Player, player_controller: PlayerController):
         assert player in self._game.players
         self._player_controllers[player.player_id] = player_controller
+        player.add_listener(self)
 
     def player_controller(self, player: Player):
         assert player in self._game.players
@@ -155,7 +196,7 @@ class GameController:
         for player in game.players:
             # START-CARDS
             for _ in range(4):
-                player.hand.append(game.districts.take_from_top())
+                player.take_card(game.districts.take_from_top())
 
             # START-GOLD
             player.cash_in(2)
@@ -165,7 +206,7 @@ class GameController:
         game.new_turn()
 
         # TURN-FACEDOWN
-        game.turn.unused_chars.append(Card(game.characters.take_random()).facedown)
+        game.turn.drop_char(Card(game.characters.take_random()).facedown)
 
         # TURN-FACEUP
         for _ in range(self._config.turn_unused_faceup_chars):
@@ -176,7 +217,9 @@ class GameController:
                 card = game.characters.take_random()
                 game.characters.put_on_bottom(Character.King)
 
-            game.turn.unused_chars.append(card)
+            game.turn.drop_char(card)
+
+        self.fire_event('turn_started')
 
         # TURN-PICK-FIRST, TURN-PICK
         for player in game.players.order_by_char_selection():
@@ -187,7 +230,7 @@ class GameController:
 
         # TURN-PICK-FACEDOWN
         while game.characters:
-            game.turn.unused_chars.append(Card(game.characters.take_from_top()).facedown)
+            game.turn.drop_char(Card(game.characters.take_from_top()).facedown)
 
     def take_turns(self):
         game = self._game
@@ -216,3 +259,36 @@ class GameController:
         # KING-KILLED
         if game.turn.killed_char == Character.King:
             game.crowned_player = game.players.find_by_char(Character.King)
+
+    def player_added(self, player: Player):
+        self.fire_event('player_added', player) # TODO: shadow everything!
+
+    def player_crowned(self, player: Player):
+        self.fire_event('player_crowned', player)
+
+    def murder_announced(self, char: Character):
+        self.fire_event('murder_announced', char)
+
+    def theft_announced(self, char: Character):
+        self.fire_event('theft_announced', char)
+
+    def cashed_in(self, player: Player, amount: int):
+        self.fire_event('player_cashed_in', player, amount)
+
+    def withdrawn(self, player: Player, amount: int):
+        self.fire_event('player_withdrawn', player, amount)
+
+    def picked_char(self, player: Player, char: Character):
+        self.fire_event('player_picked_char', player, char)
+
+    def taken_card(self, player: Player, district: District):
+        self.fire_event('player_taken_card', player, district)
+
+    def removed_card(self, player: Player, district: District):
+        self.fire_event('player_removed_card', player, district)
+
+    def district_built(self, player: Player, district: District):
+        self.fire_event('player_built_district', player, district)
+
+    def district_lost(self, player: Player, district: District):
+        self.fire_event('player_lost_district', player, district)

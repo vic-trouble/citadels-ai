@@ -16,100 +16,91 @@ def game():
 
 def test_possible_actions(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.King
+    player = game.add_player('Player', char=Character.King)
 
     # act
     sink = CommandsSink(player, game)
 
     # assert
-    assert sink.possible_actions == [commands.CashIn(2), commands.DrawCards(draw=2, keep=1)]
+    assert sink.possible_actions == (commands.CashIn(2), commands.DrawCards(draw=2, keep=1))
 
 
 def test_possible_income(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.Warlord
-    player.city = [District.Prison, District.Watchtower, District.TradingPost]
+    city = [District.Prison, District.Watchtower, District.TradingPost]
+    player = game.add_player('Player', char=Character.Warlord, city=city)
 
     # act
     sink = CommandsSink(player, game)
 
     # assert
-    assert sink.possible_income == [commands.CashIn(2)]
+    assert sink.possible_income == (commands.CashIn(2),)
 
 
 def test_possible_build(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.King
+    player = game.add_player('Player', char=Character.King, hand=[District.Tavern, District.Fortress])
     player.cash_in(2)
-    player.hand = [District.Tavern, District.Fortress]
 
     # assert
     sink = CommandsSink(player, game)
     assert not sink.possible_builds
 
     sink.execute(sink.possible_actions[0])
-    assert sink.possible_builds == [commands.Build()]
+    assert sink.possible_builds == (commands.Build(),)
 
 
 def test_assassin_abilities(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.Assassin
+    player = game.add_player('Player', char=Character.Assassin)
 
     # act
     sink = CommandsSink(player, game)
 
     # assert
-    assert sink.possible_abilities == [commands.Kill()]
+    assert sink.possible_abilities == (commands.Kill(),)
 
 
 def test_thief_abilities(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.Thief
+    player = game.add_player('Player', char=Character.Thief)
 
     # act
     sink = CommandsSink(player, game)
 
     # assert
-    assert sink.possible_abilities == [commands.Rob()]
+    assert sink.possible_abilities == (commands.Rob(),)
 
 
 def test_magician_abilities(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.Magician
+    player = game.add_player('Player', char=Character.Magician)
 
     # act
     sink = CommandsSink(player, game)
 
     # assert
-    assert sink.possible_abilities == [commands.SwapHands(), commands.ReplaceHand()]
+    assert sink.possible_abilities == (commands.SwapHands(), commands.ReplaceHand())
 
 
 def test_warlord_abilities(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.Warlord
+    player = game.add_player('Player', char=Character.Warlord)
 
     # assert
     sink = CommandsSink(player, game)
     assert not sink.possible_abilities
 
     sink.execute(sink.possible_actions[0])
-    assert sink.possible_abilities == [commands.Destroy()]
+    assert sink.possible_abilities == (commands.Destroy(),)
 
 
 def test_warlord_ability_is_final(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.Warlord
+    hand = [District.Tavern, District.Fortress]
+    city = [District.Watchtower]
+    player = game.add_player('Player', char=Character.Warlord, hand=hand, city=city)
     player.cash_in(2)
-    player.hand = [District.Tavern, District.Fortress]
-    player.city = [District.Watchtower]
 
     # act
     sink = CommandsSink(player, game)
@@ -126,13 +117,12 @@ def test_warlord_ability_is_final(game):
 
 def test_merchant_ability(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.Merchant
+    player = game.add_player('Player', char=Character.Merchant)
     player.cash_in(1)
 
     # act
     sink = CommandsSink(player, game)
-    sink.execute(next(iter(action for action in sink.possible_actions if not isinstance(action, commands.CashIn))))
+    sink.execute(next(iter(action for action in sink.possible_actions if isinstance(action, commands.DrawCards))))
 
     # assert
     assert player.gold == 2
@@ -140,13 +130,11 @@ def test_merchant_ability(game):
 
 def test_architect_ability(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.Merchant
-    player.hand = [District.Watchtower]
+    player = game.add_player('Player', char=Character.Architect, hand=[District.Watchtower])
 
     # act
     sink = CommandsSink(player, game)
-    sink.execute(next(iter(action for action in sink.possible_actions if not isinstance(action, commands.DrawCards))))
+    sink.execute(next(iter(action for action in sink.possible_actions if isinstance(action, commands.CashIn))))
 
     # assert
     assert len(player.hand) == 3
@@ -154,8 +142,7 @@ def test_architect_ability(game):
 
 def test_sink_is_done_when_end_turn_called(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.Assassin
+    player = game.add_player('Player', char=Character.Assassin)
 
     # act
     sink = CommandsSink(player, game)
@@ -168,8 +155,7 @@ def test_sink_is_done_when_end_turn_called(game):
 
 def test_cannot_end_turn_without_action_taken(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.Assassin
+    player = game.add_player('Player', char=Character.Assassin)
 
     # act
     sink = CommandsSink(player, game)
@@ -181,9 +167,7 @@ def test_cannot_end_turn_without_action_taken(game):
 
 def test_income_may_be_taken_before_action(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.Warlord
-    player.city = [District.Prison]
+    player = game.add_player('Player', char=Character.Warlord, city=[District.Prison])
 
     # act
     sink = CommandsSink(player, game)
@@ -194,9 +178,7 @@ def test_income_may_be_taken_before_action(game):
 
 def test_income_must_be_taken_after_action(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.Warlord
-    player.hand = [District.Watchtower]
+    player = game.add_player('Player', char=Character.Warlord, hand=[District.Watchtower])
     player.cash_in(10)
 
     # act
@@ -209,9 +191,7 @@ def test_income_must_be_taken_after_action(game):
 
 def test_builds_cannot_be_made_before_action(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.Warlord
-    player.hand = [District.Watchtower]
+    player = game.add_player('Player', char=Character.Warlord, hand=[District.Watchtower])
     player.cash_in(10)
 
     # act
@@ -223,10 +203,7 @@ def test_builds_cannot_be_made_before_action(game):
 
 def test_builds_can_be_made_after_action(game):
     # arrange
-    player = game.add_player('Player')
-    player.char = Character.Warlord
-    player.city = [District.Prison]
-    player.hand = [District.Watchtower]
+    player = game.add_player('Player', char=Character.Warlord, city=[District.Prison], hand=[District.Watchtower])
     player.cash_in(10)
 
     # act

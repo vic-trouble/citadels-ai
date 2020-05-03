@@ -14,7 +14,7 @@ def test_players_char_selection_order():
     game.crowned_player = player2
 
     # assert: CROWN
-    assert game.players.order_by_char_selection() == [player2, player3, player1]
+    assert game.players.order_by_char_selection() == (player2, player3, player1)
 
 
 def test_players_take_turn_order():
@@ -30,4 +30,4 @@ def test_players_take_turn_order():
     player3.char = Character.Assassin
 
     # assert: CROWN
-    assert game.players.order_by_take_turn() == [player3, player2, player1]
+    assert game.players.order_by_take_turn() == (player3, player2, player1)
