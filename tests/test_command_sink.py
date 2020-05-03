@@ -1,3 +1,5 @@
+# TODO: test king ability?
+
 import pytest
 
 from citadels.cards import Character, Deck, District, simple_districts, standard_chars
@@ -121,5 +123,115 @@ def test_warlord_ability_is_final(game):
     # assert
     assert not sink.possible_builds
 
-# TODO: test merchant ability?
-# TODO: test architect ability?
+
+def test_merchant_ability(game):
+    # arrange
+    player = game.add_player('Player')
+    player.char = Character.Merchant
+    player.cash_in(1)
+
+    # act
+    sink = CommandsSink(player, game)
+    sink.execute(next(iter(action for action in sink.possible_actions if not isinstance(action, commands.CashIn))))
+
+    # assert
+    assert player.gold == 2
+
+
+def test_architect_ability(game):
+    # arrange
+    player = game.add_player('Player')
+    player.char = Character.Merchant
+    player.hand = [District.Watchtower]
+
+    # act
+    sink = CommandsSink(player, game)
+    sink.execute(next(iter(action for action in sink.possible_actions if not isinstance(action, commands.DrawCards))))
+
+    # assert
+    assert len(player.hand) == 3
+
+
+def test_sink_is_done_when_end_turn_called(game):
+    # arrange
+    player = game.add_player('Player')
+    player.char = Character.Assassin
+
+    # act
+    sink = CommandsSink(player, game)
+    sink.execute(sink.possible_actions[0])
+    sink.end_turn()
+
+    # assert
+    assert sink.done
+
+
+def test_cannot_end_turn_without_action_taken(game):
+    # arrange
+    player = game.add_player('Player')
+    player.char = Character.Assassin
+
+    # act
+    sink = CommandsSink(player, game)
+    sink.end_turn()
+
+    # assert
+    assert not sink.done
+
+
+def test_income_may_be_taken_before_action(game):
+    # arrange
+    player = game.add_player('Player')
+    player.char = Character.Warlord
+    player.city = [District.Prison]
+
+    # act
+    sink = CommandsSink(player, game)
+
+    # assert
+    assert sink.possible_income
+
+
+def test_income_must_be_taken_after_action(game):
+    # arrange
+    player = game.add_player('Player')
+    player.char = Character.Warlord
+    player.hand = [District.Watchtower]
+    player.cash_in(10)
+
+    # act
+    sink = CommandsSink(player, game)
+    sink.execute(sink.possible_actions[0])
+
+    # assert
+    assert sink.possible_builds
+
+
+def test_builds_cannot_be_made_before_action(game):
+    # arrange
+    player = game.add_player('Player')
+    player.char = Character.Warlord
+    player.hand = [District.Watchtower]
+    player.cash_in(10)
+
+    # act
+    sink = CommandsSink(player, game)
+
+    # assert
+    assert not sink.possible_builds
+
+
+def test_builds_can_be_made_after_action(game):
+    # arrange
+    player = game.add_player('Player')
+    player.char = Character.Warlord
+    player.city = [District.Prison]
+    player.hand = [District.Watchtower]
+    player.cash_in(10)
+
+    # act
+    sink = CommandsSink(player, game)
+    sink.execute(sink.possible_actions[0])
+
+    # assert
+    assert sink.possible_builds

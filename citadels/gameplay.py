@@ -45,7 +45,8 @@ class CommandsSink:
         return self._done or not any(self._possible_commands.values())
 
     def end_turn(self):
-        self._done = True
+        if self._used_commands[CommandSpecifier.Action]:
+            self._done = True
 
     def execute(self, command: commands.Command):
         command.apply(self._player, self._game)
@@ -71,6 +72,11 @@ class CommandsSink:
                 if ability.restriction:
                     if ability.restriction & commands.Restriction.OnAfterAction:
                         if not self._used_commands[CommandSpecifier.Action]:
+                            continue
+                        if ability.restriction & commands.Restriction.Compulsory:
+                            assert not isinstance(ability, commands.InteractiveCommand)
+                            ability.apply(self._player, self._game)
+                            self._used_commands[CommandSpecifier.Ability].append(ability)
                             continue
                     if ability.restriction & commands.Restriction.OnEndTurn:
                         if not self._used_commands[CommandSpecifier.Action]:
