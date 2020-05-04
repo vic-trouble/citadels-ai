@@ -91,7 +91,9 @@ class CommandsSink:
         # BUILD
         if self._used_commands[CommandSpecifier.Action]:
             if len(self._used_commands[CommandSpecifier.Build]) < rules.how_many_districts_can_build(self._player):
-                self._possible_commands[CommandSpecifier.Build].append(commands.Build())
+                build_command = commands.Build()
+                if build_command.choices(self._player, self._game):
+                    self._possible_commands[CommandSpecifier.Build].append(build_command)
 
         # INCOME
         if not self._used_commands[CommandSpecifier.Income]:
@@ -120,7 +122,7 @@ class PlayerController:
 
 class GamePlayConfig:
     def __init__(self):
-        self.turn_unused_faceup_chars = 1
+        self.turn_unused_faceup_chars = None
 
 
 class GamePlayEvents:
@@ -158,6 +160,15 @@ class GamePlayEvents:
         pass
 
     def turn_started(self):
+        pass
+
+    def player_killed(self, player: Player):
+        pass
+
+    def player_robbed(self, player: Player):
+        pass
+
+    def player_plays(self, player: Player, char: Character):
         pass
 
 
@@ -209,7 +220,11 @@ class GameController(EventSource):
         game.turn.drop_char(Card(game.characters.take_random()).facedown)
 
         # TURN-FACEUP
-        for _ in range(self._config.turn_unused_faceup_chars):
+        if self._config.turn_unused_faceup_chars:
+            faceup_cards = self._config.turn_unused_faceup_chars
+        else:
+            faceup_cards = {2: 2, 3: 2, 4: 2, 5: 1, 6: 0, 7: 0}[len(self._game.players)]
+        for _ in range(faceup_cards):
             card = game.characters.take_random()
 
             # TURN-FACEUP-KING
@@ -239,17 +254,23 @@ class GameController(EventSource):
         for player in game.players.order_by_take_turn():
             # KILLED
             if player.char == game.turn.killed_char:
+                self.fire_event('player_killed', player)
                 continue
 
             # ROBBED
             if player.char == game.turn.robbed_char:
+                self.fire_event('player_robbed', player)
                 thief = game.players.find_by_char(Character.Thief)
-                thief.cash_in(player.gold)
-                player.withdraw(player.gold)
+                if player.gold:
+                    # TODO: make tx
+                    thief.cash_in(player.gold)
+                    player.withdraw(player.gold)
 
             # KING-CROWNING
             if player.char == Character.King:
-                game.crowned_player = player
+                game.crowned_player = player # fires event itself
+            else:
+                self.fire_event('player_plays', player, player.char)
 
             player_controller = self.player_controller(player)
             command_sink = CommandsSink(player, game)
@@ -259,6 +280,13 @@ class GameController(EventSource):
         # KING-KILLED
         if game.turn.killed_char == Character.King:
             game.crowned_player = game.players.find_by_char(Character.King)
+
+    @property
+    def game_over(self):
+        return any(rules.is_city_complete(player) for player in self._game.players)
+
+    def end_turn(self):
+        pass
 
     def player_added(self, player: Player):
         self.fire_event('player_added', player) # TODO: shadow everything!

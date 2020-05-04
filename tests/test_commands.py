@@ -47,10 +47,13 @@ def test_kill(player, game):
     # arrange
     command = commands.Kill()
 
+    game.turn.drop_char(Character.Architect)
+
     # act
     choices = command.choices(ShadowPlayer(player, me=True), ShadowGame(game))
     assert choices
     assert Character.Assassin not in choices
+    assert Character.Architect not in choices
 
     command.select(Character.King)
     assert not command.choices(ShadowPlayer(player, me=True), ShadowGame(game))
@@ -65,6 +68,7 @@ def test_rob(player, game):
     # arrange
     command = commands.Rob()
 
+    game.turn.drop_char(Character.Architect)
     game.turn.killed_char = Character.King
 
     # act
@@ -72,6 +76,8 @@ def test_rob(player, game):
     assert choices
     assert Character.Assassin not in choices
     assert Character.King not in choices
+    assert Character.Thief not in choices
+    assert Character.Architect not in choices
 
     command.select(Character.Bishop)
     assert not command.choices(ShadowPlayer(player, me=True), ShadowGame(game))

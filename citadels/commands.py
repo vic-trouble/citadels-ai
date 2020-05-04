@@ -121,7 +121,7 @@ class Rob(InteractiveCommand):
         if self._char:
             return []
         else:
-            cant_rob = chain.from_iterable((Character.Thief, Character.Assassin, game.turn.killed_char), game.turn.unused_chars)
+            cant_rob = [Character.Thief, Character.Assassin, game.turn.killed_char] + list(game.turn.unused_chars)
             return [char for char in all_chars if char not in cant_rob]
 
     def select(self, choice):
