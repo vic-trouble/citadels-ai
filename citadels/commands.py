@@ -63,20 +63,59 @@ class CashIn(Command):
 
 
 class DrawCards(Command):
-    def __init__(self, draw=2, keep=1, **kwargs):
+    def __init__(self, amount, **kwargs):
         super().__init__(**kwargs)
-        self._draw = draw
-        self._keep = keep  # TODO: not implemented :(
+        self._draw = amount
 
     def apply(self, player: Player, game: Game):
         for _ in range(self._draw):
             player.take_card(game.districts.take_from_top())
 
     def __repr__(self):
-        return 'DrawCards(draw={draw}, keep={keep})'.format(draw=self._draw, keep=self._keep)
+        return 'DrawCards({draw})'.format(draw=self._draw)
 
     def __eq__(self, other):
-        return isinstance(other, DrawCards) and (self._draw, self._keep) == (other._draw, other._keep)
+        return isinstance(other, DrawCards) and (self._draw) == (other._draw)
+
+    @property
+    def help(self):
+        return 'Draw {} cards'.format(self._draw)
+
+
+class DrawSomeCards(InteractiveCommand):
+    def __init__(self, draw=2, keep=1, **kwargs):
+        super().__init__(**kwargs)
+        self._draw = draw
+        self._keep = keep
+        assert 0 < self._keep <= self._draw
+        self._cards_taken = []
+        self._cards_to_keep = []
+
+    def choices(self, player: Player, game: Game):
+        if not self._cards_taken:
+            self._cards_taken = [game.districts.take_from_top() for _ in range(self._draw)]
+        if len(self._cards_to_keep) < self._keep:
+            return self._cards_taken
+        else:
+            return []
+
+    def select(self, choice):
+        assert choice in self._cards_taken
+        self._cards_taken.remove(choice)
+        self._cards_to_keep.append(choice)
+
+    def apply(self, player: Player, game: Game):
+        assert self._cards_to_keep
+        for card in self._cards_to_keep:
+            player.take_card(card)
+        for card in self._cards_taken:
+            game.districts.put_on_bottom(card)
+
+    def __repr__(self):
+        return 'DrawSomeCards(draw={draw}, keep={keep})'.format(draw=self._draw, keep=self._keep)
+
+    def __eq__(self, other):
+        return isinstance(other, DrawSomeCards) and (self._draw, self._keep) == (other._draw, other._keep)
 
     @property
     def help(self):

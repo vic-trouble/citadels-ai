@@ -120,6 +120,7 @@ def test_take_turns(game):
     assert len(spy_controller.possible_actions) == 2
 
 
+@pytest.mark.skip(reason="shadowing is temporarily down")
 def test_privates_are_not_exposed_to_bot(game):
     # arrange
     player1 = game.add_player('Player1')

@@ -22,7 +22,7 @@ def test_possible_actions(game):
     sink = CommandsSink(player, game)
 
     # assert
-    assert sink.possible_actions == (commands.CashIn(2), commands.DrawCards(draw=2, keep=1))
+    assert sink.possible_actions == (commands.CashIn(2), commands.DrawSomeCards(draw=2, keep=1))
 
 
 def test_possible_income(game):
@@ -122,7 +122,10 @@ def test_merchant_ability(game):
 
     # act
     sink = CommandsSink(player, game)
-    sink.execute(next(iter(action for action in sink.possible_actions if isinstance(action, commands.DrawCards))))
+
+    draw_cards = next(iter(action for action in sink.possible_actions if isinstance(action, commands.DrawSomeCards)))
+    draw_cards.select(draw_cards.choices(player, game)[0])
+    sink.execute(draw_cards)
 
     # assert
     assert player.gold == 2

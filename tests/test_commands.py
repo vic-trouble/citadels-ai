@@ -32,15 +32,33 @@ def test_cash_in(player, game):
     assert player.gold == 10
 
 
+def test_draw_some_cards(player, game):
+    # arrange
+    command = commands.DrawSomeCards(draw=2, keep=1)
+
+    num_districts = len(game.districts)
+
+    # act
+    command.select(command.choices(player, game)[0])
+    command.apply(player, game)
+
+    # assert
+    assert len(player.hand) == 1
+    assert len(game.districts) == num_districts - 1
+
+
 def test_draw_cards(player, game):
     # arrange
-    command = commands.DrawCards(draw=2, keep=1)
+    command = commands.DrawCards(2)
+
+    num_districts = len(game.districts)
 
     # act
     command.apply(player, game)
 
     # assert
-    assert len(player.hand) == 2 # TODO: should be 1; not implemented
+    assert len(player.hand) == 2
+    assert len(game.districts) == num_districts - 2
 
 
 def test_kill(player, game):

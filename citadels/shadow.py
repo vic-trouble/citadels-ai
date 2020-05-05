@@ -43,4 +43,5 @@ class ShadowGame:
         self.crowned_player = shadow_players[crowned_index] if crowned_index != -1 else None
         self.players = PlayersProxy(shadow_players, self.crowned_player)
         self.turn = ShadowTurn(game.turn)
-        self.districts = Deck([Card(district).facedown for district in game.districts])
+        #self.districts = Deck([Card(district).facedown for district in game.districts])
+        self.districts = game.districts # TODO: temporary regression

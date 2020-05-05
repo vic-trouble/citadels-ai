@@ -159,6 +159,9 @@ class Card:
             return False
         return self._payload == other._payload if not self._locked else True
 
+    def __repr__(self):
+        return 'None' if self._locked else str(self._payload)
+
 
 class Deck:
     def __init__(self, cards):

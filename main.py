@@ -6,7 +6,7 @@ import sys
 assert sys.version_info[:2] >= (3, 7)
 
 from ai.bot import BotController
-from citadels.cards import Character, CharacterInfo, Color, District, DistrictInfo, all_chars, simple_districts, standard_chars
+from citadels.cards import Card, Character, CharacterInfo, Color, District, DistrictInfo, all_chars, simple_districts, standard_chars
 from citadels import commands
 from citadels.game import Deck, Game, Player
 from citadels.gameplay import CommandsSink, GameController, PlayerController
@@ -32,6 +32,8 @@ def help_str(val):
             Color.Yellow: 'Y',
             Color.Purple: 'P',
         }[val]
+    elif isinstance(val, Card):
+        return '?' if not val else help_str(val)
     else:
         return str(val)
 
