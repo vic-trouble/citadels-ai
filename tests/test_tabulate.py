@@ -1,4 +1,4 @@
-from term.tabulate import tabulate
+from term.io import tabulate
 
 def test_empty():
     assert tabulate([]) == []

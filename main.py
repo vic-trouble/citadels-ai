@@ -10,35 +10,7 @@ from citadels.cards import Character, CharacterInfo, Color, District, DistrictIn
 from citadels import commands
 from citadels.game import Deck, Game, Player
 from citadels.gameplay import CommandsSink, GameController, PlayerController
-from term.tabulate import tabulate
-
-
-def dialog(prolog, choices=None, help=None):
-    def is_iterable(obj):
-        try:
-            iter(obj)
-            return True
-        except TypeError:
-            return False
-
-    while True:
-        if help:
-            print(prolog)
-            print('\n'.join(tabulate('{k}: {v}'.format(k=k, v=v) for k, v in help.items())))
-            print('> ', end='')
-        else:
-            print(prolog + ': ', end='')
-        inp = input()
-        if not choices:
-            return inp
-        if is_iterable(choices):
-            if inp in choices:
-                return inp
-        elif callable(choices):
-            if choices(inp):
-                return True
-        else:
-            raise TypeError('Invalid choices')
+from term.io import dialog
 
 
 def help_str(val):
