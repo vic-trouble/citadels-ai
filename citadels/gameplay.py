@@ -210,10 +210,6 @@ class GameController(EventSource):
         # DISTRICT-DECK
         game.districts.shuffle()
 
-        # START-CROWN
-        if not game.crowned_player:
-            game.crowned_player = game.players[0]
-
         for player in game.players:
             # START-CARDS
             with EventTransaction(self, 'player_taken_some_cards', player, 4):
@@ -222,6 +218,10 @@ class GameController(EventSource):
 
             # START-GOLD
             player.cash_in(2)
+
+        # START-CROWN
+        if not game.crowned_player:
+            game.crowned_player = game.players[0]
 
     def start_turn(self):
         game = self._game
@@ -266,6 +266,8 @@ class GameController(EventSource):
 
         # TURN-CALL
         for player in game.players.order_by_take_turn():
+            self.fire_event('player_plays', player, player.char)
+
             # KILLED
             if player.char == game.turn.killed_char:
                 self.fire_event('player_killed', player)
@@ -283,8 +285,6 @@ class GameController(EventSource):
             # KING-CROWNING
             if player.char == Character.King:
                 game.crowned_player = player # fires event itself
-            else:
-                self.fire_event('player_plays', player, player.char)
 
             player_controller = self.player_controller(player)
             command_sink = CommandsSink(player, game)

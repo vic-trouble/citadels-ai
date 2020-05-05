@@ -82,7 +82,8 @@ class TermPlayerController(PlayerController):
 
 
 class TermGamePlayListener:
-    def __init__(self, game: Game):
+    def __init__(self, player: Player, game: Game):
+        self._player = player
         self._game = game
 
     def player_added(self, player: Player):
@@ -129,14 +130,16 @@ class TermGamePlayListener:
 
         for player in self._game.players:
             king = '* ' if player == self._game.crowned_player else ''
-            print('{king}{plr} with {gold} gold, hand={hand}, city={city}'.format(king=king, plr=player.name, hand=[help_str(d) for d in player.hand], city=[help_str(d) for d in player.city], gold=player.gold))
+            is_me = player == self._player
+            hand = [help_str(d) if is_me else '?' for d in player.hand]
+            print('{king}{plr} with {gold} gold, hand={hand}, city={city}'.format(king=king, plr=player.name, hand=hand, city=[help_str(d) for d in player.city], gold=player.gold))
 
     def player_killed(self, player: Player):
-        print('\n{plr} is killed'.format(plr=player.name))
+        print('{plr} is killed'.format(plr=player.name))
 
     def player_robbed(self, player: Player, gold: int):
         thief = self._game.players.find_by_char(Character.Thief)
-        print('\n{plr} is robbed by {thief} for {gold} gold'.format(plr=player.name, thief=thief.name, gold=gold))
+        print('{plr} is robbed by {thief} for {gold} gold'.format(plr=player.name, thief=thief.name, gold=gold))
 
     def player_plays(self, player: Player, char: Character):
         print('\n{plr} is {char}'.format(plr=player.name, char=help_str(char)))
@@ -168,11 +171,13 @@ def main():
 
     game = Game(Deck(standard_chars()), Deck(simple_districts()))
     game_controller = GameController(game)
-    game_controller.add_listener(TermGamePlayListener(game))
 
     assert 2 <= num_players <= 7
     player = game.add_player(name)
     game_controller.set_player_controller(player, TermPlayerController())
+
+    game_controller.add_listener(TermGamePlayListener(player, game))
+
     for i in range(num_players - 1):
         bot = game.add_player('bot{}'.format(i + 1))
         game_controller.set_player_controller(bot, BotController())
