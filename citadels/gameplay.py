@@ -4,7 +4,8 @@ from itertools import chain
 
 from citadels.cards import Card, Character, CharacterInfo, Deck, District, DistrictInfo
 from citadels import commands
-from citadels.game import EventSource, Game, GameError, Player
+from citadels.event import EventSource, EventTransaction
+from citadels.game import Game, GameError, Player
 from citadels import rules
 from citadels.shadow import ShadowGame, ShadowPlayer
 
@@ -150,6 +151,9 @@ class GamePlayEvents:
     def player_taken_card(self, player: Player, district: District):
         pass
 
+    def player_taken_some_cards(self, player: Player, amount: int):
+        pass
+
     def player_removed_card(self, player: Player, district: District):
         pass
 
@@ -165,10 +169,16 @@ class GamePlayEvents:
     def player_killed(self, player: Player):
         pass
 
-    def player_robbed(self, player: Player):
+    def player_robbed(self, player: Player, gold: int):
         pass
 
     def player_plays(self, player: Player, char: Character):
+        pass
+
+    def player_swapped_hands(self, player, other_player):
+        pass
+
+    def player_replaced_hand(self, player, amount: int):
         pass
 
 
@@ -206,8 +216,9 @@ class GameController(EventSource):
 
         for player in game.players:
             # START-CARDS
-            for _ in range(4):
-                player.take_card(game.districts.take_from_top())
+            with EventTransaction(self, 'player_taken_some_cards', player, 4):
+                for _ in range(4):
+                    player.take_card(game.districts.take_from_top())
 
             # START-GOLD
             player.cash_in(2)
@@ -248,6 +259,9 @@ class GameController(EventSource):
             game.turn.drop_char(Card(game.characters.take_from_top()).facedown)
 
     def take_turns(self):
+        if self.game_over:
+            return
+
         game = self._game
 
         # TURN-CALL
@@ -259,12 +273,12 @@ class GameController(EventSource):
 
             # ROBBED
             if player.char == game.turn.robbed_char:
-                self.fire_event('player_robbed', player)
                 thief = game.players.find_by_char(Character.Thief)
                 if player.gold:
                     # TODO: make tx
-                    thief.cash_in(player.gold)
-                    player.withdraw(player.gold)
+                    with EventTransaction(self, 'player_robbed', player, player.gold):
+                        thief.cash_in(player.gold)
+                        player.withdraw(player.gold)
 
             # KING-CROWNING
             if player.char == Character.King:
@@ -320,3 +334,9 @@ class GameController(EventSource):
 
     def district_lost(self, player: Player, district: District):
         self.fire_event('player_lost_district', player, district)
+
+    def swapped_hands(self, player, other_player):
+        self.fire_event('player_swapped_hands', player, other_player)
+
+    def replaced_hand(self, player, amount: int):
+        self.fire_event('player_replaced_hand', player, amount)

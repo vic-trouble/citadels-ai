@@ -115,13 +115,15 @@ class TermGamePlayListener:
         print('{} has joined'.format(player.name))
 
     def player_crowned(self, player: Player):
-        print('{} is the new King now!'.format(player.name))
+        print('\n{} is the new King now!'.format(player.name))
 
     def murder_announced(self, char: Character):
-        print('{} is gonna be killed!'.format(CharacterInfo(char).name))
+        assassin = self._game.players.find_by_char(Character.Assassin)
+        print('{ass} wants to kill {char}!'.format(ass=assassin.name, char=CharacterInfo(char).name))
 
     def theft_announced(self, char: Character):
-        print('{} is gonna be robbed!'.format(CharacterInfo(char).name))
+        thief = self._game.players.find_by_char(Character.Thief)
+        print('{thief} wants to rob {char}!'.format(thief=thief.name, char=CharacterInfo(char).name))
 
     def player_cashed_in(self, player: Player, amount: int):
         print('{plr} has taken {amount} gold ({total} in total)'.format(plr=player.name, amount=amount, total=player.gold))
@@ -140,7 +142,7 @@ class TermGamePlayListener:
         print('{plr} has removed {card} card'.format(plr=player.name, card=DistrictInfo(district).name))
 
     def player_built_district(self, player: Player, district: District):
-        print('{plr} has built {card}'.format(plr=player.name, card=DistrictInfo(district).name))
+        print('{plr} has built {district} ({total} in total)'.format(plr=player.name, district=DistrictInfo(district).name, total=len(player.city)))
 
     def player_lost_district(self, player: Player, district: District):
         print('{plr} has lost {card}'.format(plr=player.name, card=DistrictInfo(district).name))
@@ -158,11 +160,22 @@ class TermGamePlayListener:
     def player_killed(self, player: Player):
         print('\n{plr} is killed'.format(plr=player.name))
 
-    def player_robbed(self, player: Player):
-        print('\n{plr} is robbed'.format(plr=player.name))
+    def player_robbed(self, player: Player, gold: int):
+        thief = self._game.players.find_by_char(Character.Thief)
+        print('\n{plr} is robbed by {thief} for {gold} gold'.format(plr=player.name, thief=thief.name, gold=gold))
 
     def player_plays(self, player: Player, char: Character):
         print('\n{plr} is {char}'.format(plr=player.name, char=help_str(char)))
+
+    def player_swapped_hands(self, player, other_player):
+        if player.char == Character.Magician:
+            print('{plr} swapped hands with {other}'.format(plr=player.name, other=other_player.name))
+
+    def player_replaced_hand(self, player, amount: int):
+        print('{plr} replaced {amount} cards'.format(plr=player.name, amount=amount))
+
+    def player_taken_some_cards(self, player: Player, amount: int):
+        print('{plr} has taken {amount} cards'.format(plr=player.name, amount=amount))
 
 
 def main():

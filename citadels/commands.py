@@ -2,6 +2,7 @@ from enum import IntFlag, auto
 from itertools import chain
 
 from citadels.cards import Character, all_chars
+from citadels.event import EventTransaction
 from citadels.game import Game, Player
 from citadels import rules
 
@@ -158,13 +159,15 @@ class SwapHands(InteractiveCommand):
         assert self._target
         player1 = game.players.find_by_id(player.player_id)
         player2 = game.players.find_by_id(self._target.player_id)
-        p1_cards = tuple(player1.hand)
-        for card in player2.hand:
-            player2.remove_card(card)
-            player1.take_card(card)
-        for card in p1_cards:
-            player1.remove_card(card)
-            player2.take_card(card)
+
+        with EventTransaction(player1, 'swapped_hands', player1, player2), EventTransaction(player2, 'swapped_hands', player2, player1):
+            p1_cards = tuple(player1.hand)
+            for card in player2.hand:
+                player2.remove_card(card)
+                player1.take_card(card)
+            for card in p1_cards:
+                player1.remove_card(card)
+                player2.take_card(card)
 
     def __repr__(self):
         return 'SwapHands({})'.format(self._target)
@@ -189,10 +192,11 @@ class ReplaceHand(InteractiveCommand):
         self._cards.append(choice)
 
     def apply(self, player: Player, game: Game):
-        for card in self._cards:
-            player.remove_card(card)
-            game.districts.put_on_bottom(card)
-            player.take_card(game.districts.take_from_top())
+        with EventTransaction(player, 'replaced_hand', player, len(self._cards)):
+            for card in self._cards:
+                player.remove_card(card)
+                game.districts.put_on_bottom(card)
+                player.take_card(game.districts.take_from_top())
 
     def __repr__(self):
         return 'ReplaceHand({})'.format(self._cards)
@@ -250,10 +254,11 @@ class Build(InteractiveCommand):
 
     def apply(self, player: Player, game: Game):
         assert self._district
-        cost = rules.how_much_cost_to_build(self._district, player)
-        player.withdraw(cost)
-        player.remove_card(self._district)
-        player.build_district(self._district)
+        with EventTransaction(player, 'district_built', player, self._district):
+            cost = rules.how_much_cost_to_build(self._district, player)
+            player.withdraw(cost)
+            player.remove_card(self._district)
+            player.build_district(self._district)
 
     def __repr__(self):
         return 'Build({})'.format(self._district)

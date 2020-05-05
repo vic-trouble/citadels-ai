@@ -2,6 +2,7 @@ from collections import defaultdict
 from copy import deepcopy
 
 from citadels.cards import Character, Deck, District
+from citadels.event import EventSource
 
 
 class GameError(RuntimeError):
@@ -43,18 +44,6 @@ class BankAccount:
         return amount
 
 
-class EventSource:
-    def __init__(self):
-        self._listeners = []
-
-    def add_listener(self, listener):
-        self._listeners.append(listener)
-
-    def fire_event(self, event: str, *args, **kwargs):
-        for listener in self._listeners:
-            getattr(listener, event)(*args, **kwargs)
-
-
 class PlayerListener:
     def cashed_in(self, player, amount: int):
         pass
@@ -72,6 +61,12 @@ class PlayerListener:
         pass
 
     def district_lost(self, player, district: District):
+        pass
+
+    def swapped_hands(self, player, other_player):
+        pass
+
+    def replaced_hand(self, player, amount: int):
         pass
 
 
