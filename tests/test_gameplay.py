@@ -20,8 +20,10 @@ class SpyPlayerController:
     def __init__(self):
         self.game = None
         self.possible_actions = None
+        self.possible_chars = None
 
     def pick_char(self, char_deck: Deck, player: Player, game: Game):
+        self.possible_chars = char_deck.cards
         return char_deck.cards[0]
 
     def take_turn(self, player: Player, game: Game, sink: CommandsSink):
@@ -66,7 +68,7 @@ def test_start_game(game):
     assert game.crowned_player == player1
 
 
-def test_pick_chars(game): # TODO: fails at times
+def test_pick_chars(game):
     # arrange
     player1 = game.add_player('Player1')
     player2 = game.add_player('Player2')
@@ -76,8 +78,10 @@ def test_pick_chars(game): # TODO: fails at times
     config.turn_unused_faceup_chars = 2
 
     game_controller = GameController(game, config)
-    game_controller.set_player_controller(player1, DummyPlayerController())
-    game_controller.set_player_controller(player2, DummyPlayerController())
+    controller1 = SpyPlayerController()
+    game_controller.set_player_controller(player1, controller1)
+    controller2 = SpyPlayerController()
+    game_controller.set_player_controller(player2, controller2)
 
     game_controller.start_game()
 
@@ -87,8 +91,9 @@ def test_pick_chars(game): # TODO: fails at times
     # assert
     # TURN-PICK
     assert player1.char is not None
+    assert player2.char is not None
     # TURN-PICK-FIRST
-    assert player2.char == Character.King
+    assert len(controller2.possible_chars) > len(controller1.possible_chars)
 
     # TURN-PICK-FACEDOWN
     assert len(game.turn.unused_chars) == 6
