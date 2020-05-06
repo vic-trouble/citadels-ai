@@ -291,6 +291,9 @@ class GameController(EventSource):
             while not command_sink.done:
                 player_controller.take_turn(ShadowPlayer(player, me=True), ShadowGame(game), command_sink)
 
+            if rules.is_city_complete(player) and not game.turn.first_completer:
+                game.turn.first_completer = player
+
         # KING-KILLED
         if game.turn.killed_char == Character.King:
             game.crowned_player = game.players.find_by_char(Character.King)
@@ -301,6 +304,35 @@ class GameController(EventSource):
 
     def end_turn(self):
         pass
+
+    @property
+    def winner(self):
+        assert self.game_over
+        # SCORE-WINNER
+        by_score = defaultdict(list)
+        for player in self._game.players:
+            score = rules.score(player, self._game)
+            by_score[score].append(player)
+
+        max_score = max(by_score.keys())
+        if len(by_score[max_score]) == 1:
+            return by_score[max_score][0]
+
+        by_pure_score = defaultdict(list)
+        for player in by_score[max_score]:
+            pure_score = rules.score(player, self._game, with_bonuses=False)
+            by_pure_score[pure_score].append(player)
+
+        max_pure_score = max(by_pure_score.keys())
+        if len(by_pure_score[max_pure_score]) == 1:
+            return by_pure_score[max_pure_score][0]
+
+        by_gold = defaultdict(list)
+        for player in by_pure_score[max_pure_score]:
+            by_gold[player.gold].append(player)
+
+        max_gold = max(by_gold.keys())
+        return by_gold[max_gold][0]
 
     def player_added(self, player: Player):
         self.fire_event('player_added', player) # TODO: shadow everything!

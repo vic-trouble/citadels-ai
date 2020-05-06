@@ -11,6 +11,7 @@ class ShadowTurn:
         self.unused_chars = turn.unused_chars
         self.killed_char = turn.killed_char
         self.robbed_char = turn.robbed_char
+        self.first_completer = turn.first_completer
 
 
 class ShadowPlayer:

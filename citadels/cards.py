@@ -15,8 +15,8 @@ class Character(IntEnum):
     Warlord = auto()
 
 
-all_chars = frozenset([Character.Assassin, Character.Thief, Character.Magician, Character.King,
-                       Character.Bishop, Character.Merchant, Character.Architect, Character.Warlord])
+all_chars = (Character.Assassin, Character.Thief, Character.Magician, Character.King,
+             Character.Bishop, Character.Merchant, Character.Architect, Character.Warlord)
 
 
 class District(Enum):
@@ -70,6 +70,9 @@ class Color(Enum):
     Green = auto()
     Blue = auto()
     Purple = auto()
+
+
+all_colors = (Color.Red, Color.Yellow, Color.Green, Color.Blue) # TODO: add purple
 
 
 class DistrictInfo:

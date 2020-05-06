@@ -149,6 +149,7 @@ class Turn:
         self._unused_chars = []
         self._killed_char = None
         self._robbed_char = None
+        self._first_completer = None
 
     def drop_char(self, char: Character):
         """ Remove character from playable set """
@@ -177,6 +178,14 @@ class Turn:
         assert char
         self._robbed_char = char
         self._game.fire_event('theft_announced', char)
+
+    @property
+    def first_completer(self):
+        return self._first_completer
+
+    @first_completer.setter
+    def first_completer(self, player):
+        self._first_completer = player
 
 
 class PlayersProxy:

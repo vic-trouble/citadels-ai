@@ -1,4 +1,4 @@
-from citadels.cards import Character, District, DistrictInfo
+from citadels.cards import Character, District, DistrictInfo, all_colors
 from citadels.game import Game, Player
 from citadels import commands
 
@@ -44,3 +44,27 @@ def can_be_built(district: District, player: Player):
 def can_be_destroyed(district: District, owner: Player):
     # BISHOP-PROTECT
     return owner.char != Character.Bishop
+
+
+def score(player: Player, game: Game, with_bonuses=True):
+    # SCORE-1
+    score = sum(DistrictInfo(district).cost for district in player.city)
+
+    if not with_bonuses:
+        return score
+
+    # SCORE-2
+    built_colors = set()
+    for district in player.city:
+        built_colors.add(DistrictInfo(district).color)
+    if built_colors == set(all_colors):
+        score += 3
+
+    # SCORE-3, SCORE-4
+    if is_city_complete(player):
+        if game.turn.first_completer == player:
+            score += 4
+        else:
+            score += 2
+
+    return score
