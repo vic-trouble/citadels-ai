@@ -53,6 +53,6 @@ def dialog(prolog: str, choices=None, help=None):
                 return inp
         elif callable(choices):
             if choices(inp):
-                return True
+                return inp
         else:
             raise TypeError('Invalid choices')
