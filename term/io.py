@@ -46,6 +46,8 @@ def dialog(prolog: str, choices=None, help=None):
         else:
             print(prolog + ': ', end='')
         inp = input()
+        if not inp:
+            continue
         if not choices:
             return inp
         if is_iterable(choices):
