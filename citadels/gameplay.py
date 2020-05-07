@@ -296,7 +296,9 @@ class GameController(EventSource):
 
         # KING-KILLED
         if game.turn.killed_char == Character.King:
-            game.crowned_player = game.players.find_by_char(Character.King)
+            king = game.players.find_by_char(Character.King)
+            if king:
+                game.crowned_player = king
 
     @property
     def game_over(self):
