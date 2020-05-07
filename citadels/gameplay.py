@@ -166,6 +166,9 @@ class GamePlayEvents:
     def turn_started(self):
         pass
 
+    def turn_ended(self):
+        pass
+
     def player_killed(self, player: Player):
         pass
 
@@ -305,7 +308,7 @@ class GameController(EventSource):
         return any(rules.is_city_complete(player) for player in self._game.players)
 
     def end_turn(self):
-        pass
+        self.fire_event('turn_ended')
 
     @property
     def winner(self):

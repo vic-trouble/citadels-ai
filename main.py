@@ -134,6 +134,14 @@ class TermGamePlayListener:
             hand = [help_str(d) if is_me else '?' for d in player.hand]
             print('{king}{plr} with {gold} gold, hand={hand}, city={city}'.format(king=king, plr=player.name, hand=hand, city=[help_str(d) for d in player.city], gold=player.gold))
 
+    def turn_ended(self):
+        game = self._game
+        print('\nEnd of turn')
+        if not game.players.find_by_char(game.turn.robbed_char):
+            print('Nobody is robbed this turn!')
+        if not game.players.find_by_char(game.turn.killed_char):
+            print('Nobody is killed this turn!')
+
     def player_killed(self, player: Player):
         print('{plr} is killed'.format(plr=player.name))
 
