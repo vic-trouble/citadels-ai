@@ -256,7 +256,8 @@ class Destroy(InteractiveCommand):
 
     def choices(self, player: Player, game: Game):
         if not self._target:
-            return [p for p in game.players if not rules.is_city_complete(p)] # WARLORD-SPARE-COMPLETE, WARLORD-DESTROY-OWN
+            return [p for p in game.players if not rules.is_city_complete(p) and
+                    any(rules.can_be_destroyed(d, p) for d in p.city)] # WARLORD-SPARE-COMPLETE, WARLORD-DESTROY-OWN
 
         if not self._card:
             victim = game.players.find_by_id(self._target.player_id)
