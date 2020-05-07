@@ -173,7 +173,7 @@ def main():
     name = args.name
 
     if not num_players:
-        num_players = int(dialog('Enter number of players (2..7)', '234567'))
+        num_players = int(dialog('Enter number of players (2..4)', '234'))
     if not name:
         name = dialog('Enter your name', lambda n: n.strip() != '')
 
