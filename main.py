@@ -10,6 +10,7 @@ from citadels.cards import Card, Character, CharacterInfo, Color, District, Dist
 from citadels import commands
 from citadels.game import Deck, Game, Player
 from citadels.gameplay import CommandsSink, GameController, PlayerController
+from citadels import rules
 from term.io import dialog
 
 
@@ -196,6 +197,11 @@ def main():
         game_controller.start_turn()
         game_controller.take_turns()
         game_controller.end_turn()
+
+    print('\n----------------------\nGame over!\n')
+    for player in game.players:
+        print('{plr} scored {score}'.format(plr=player.name, score=rules.score(player, game)))
+    print('Winner is {plr}'.format(plr=game_controller.winner.name))
 
 
 if __name__ == '__main__':
