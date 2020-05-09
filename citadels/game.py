@@ -82,6 +82,14 @@ class Player(EventSource):
         self._hand = list(hand) if hand else []
         self._city = list(city) if city else []
 
+    def __getstate__(self):
+        super_state = super().__getstate__()
+        return (super_state, self.name, self._id, self._game, self._char, self._hand, self._city)
+
+    def __setstate__(self, state):
+        super_state, self.name, self._id, self._game, self._char, self._hand, self._city = state
+        super().__setstate__(state)
+
     @property
     def player_id(self):
         """ Unique ID for a give game """
@@ -260,10 +268,12 @@ class Game(EventSource):
         self._districts = deepcopy(districts)
 
     def __getstate__(self):
-        return (self._players, self._bank, self._crowned_player, self._turn, self._chars, self._orig_chars, self._districts)
+        super_state = super().__getstate__()
+        return (super_state, self._players, self._bank, self._crowned_player, self._turn, self._chars, self._orig_chars, self._districts)
 
     def __setstate__(self, state):
-        self._players, self._bank, self._crowned_player, self._turn, self._chars, self._orig_chars, self._districts = state
+        super_state, self._players, self._bank, self._crowned_player, self._turn, self._chars, self._orig_chars, self._districts = state
+        super().__setstate__(super_state)
 
     def add_player(self, name, char=None, hand=None, city=None):
         """ Add new player to the game """
