@@ -40,6 +40,10 @@ class InteractiveCommand(Command):
     def help(self):
         raise NotImplementedError()
 
+    @property
+    def ready(self):
+        raise NotImplementedError()
+
     # TODO: add restart()
 
 
@@ -121,6 +125,10 @@ class DrawSomeCards(InteractiveCommand):
     def help(self):
         return 'Draw {} cards'.format(self._draw) + (' ({} to keep)'.format(self._keep) if self._keep != self._draw else '')
 
+    @property
+    def ready(self):
+        return len(self._cards_to_keep) == self._keep
+
 
 class Kill(InteractiveCommand):
     def __init__(self, **kwargs):
@@ -150,6 +158,10 @@ class Kill(InteractiveCommand):
     @property
     def help(self):
         return 'Kill'
+
+    @property
+    def ready(self):
+        return bool(self._char)
 
 
 class Rob(InteractiveCommand):
@@ -181,6 +193,10 @@ class Rob(InteractiveCommand):
     @property
     def help(self):
         return 'Rob'
+
+    @property
+    def ready(self):
+        return bool(self._char)
 
 
 class SwapHands(InteractiveCommand):
@@ -218,6 +234,10 @@ class SwapHands(InteractiveCommand):
     def help(self):
         return 'Swap hands with another player'
 
+    @property
+    def ready(self):
+        return bool(self._target)
+
 
 class ReplaceHand(InteractiveCommand):
     def __init__(self, **kwargs):
@@ -225,7 +245,10 @@ class ReplaceHand(InteractiveCommand):
         self._cards = []
 
     def choices(self, player: Player, game: Game):
-        return [card for card in player.hand if card not in self._cards]
+        cards = list(player.hand)
+        for card in self._cards:
+            cards.remove(card)
+        return cards
 
     def select(self, choice):
         self._cards.append(choice)
@@ -246,6 +269,10 @@ class ReplaceHand(InteractiveCommand):
     @property
     def help(self):
         return 'Replace some cards'
+
+    @property
+    def ready(self):
+        return bool(self._cards)
 
 
 class Destroy(InteractiveCommand):
@@ -286,6 +313,10 @@ class Destroy(InteractiveCommand):
     def help(self):
         return 'Destroy district'
 
+    @property
+    def ready(self):
+        return self._target and self._card
+
 
 class Build(InteractiveCommand):
     def __init__(self, **kwargs):
@@ -324,6 +355,10 @@ class Build(InteractiveCommand):
     @property
     def help(self):
         return 'Build district'
+
+    @property
+    def ready(self):
+        return self._district
 
 
 class TakeCrown(Command):

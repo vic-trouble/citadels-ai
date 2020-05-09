@@ -129,23 +129,25 @@ def test_swap_hands(game):
 
 def test_replace_hands(game):
     # arrange
-    player = game.add_player('Player', hand=[District.Cathedral, District.Tavern])
+    player = game.add_player('Player', hand=[District.Cathedral, District.Tavern, District.Cathedral])
 
     command = commands.ReplaceHand()
 
     num_districts = len(game.districts)
 
     # act
-    assert command.choices(ShadowPlayer(player, me=True), ShadowGame(game)) == [District.Cathedral, District.Tavern]
+    assert command.choices(ShadowPlayer(player, me=True), ShadowGame(game)) == [District.Cathedral, District.Tavern, District.Cathedral]
 
     command.select(District.Cathedral)
-    assert command.choices(ShadowPlayer(player, me=True), ShadowGame(game)) == [District.Tavern]
+    assert command.choices(ShadowPlayer(player, me=True), ShadowGame(game)) == [District.Tavern, District.Cathedral]
 
     command.apply(player, game)
 
     # assert
-    assert player.hand != [District.Cathedral, District.Tavern]
-    assert len(player.hand) == 2
+    assert len(player.hand) == 3
+    assert list(player.hand)[:2] == [District.Tavern, District.Cathedral]
+    assert player.hand[2] != District.Cathedral
+
     assert len(game.districts) == num_districts
 
 

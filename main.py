@@ -48,10 +48,14 @@ def examine(my_player, game):
 
     for player in game.players:
         king = '* ' if player == game.crowned_player else ''
-        is_me = player.player_id == my_player.player_id
         values = {'king': king, 'plr': player.name, 'gold': player.gold}
-        values['hand'] = [help_str(d) if is_me else '?' for d in player.hand]
         values['city'] = [help_str(d) for d in player.city]
+
+        is_me = player.player_id == my_player.player_id
+        if is_me:
+            values['hand'] = [help_str(d) for d in my_player.hand]
+        else:
+            values['hand'] = ['?'] * len(player.hand)
 
         known_char = is_me
         if not known_char:
@@ -81,11 +85,21 @@ class TermPlayerController(PlayerController):
         def make_exec(command: commands.Command):
             def do_exec(command: commands.Command):
                 if isinstance(command, commands.InteractiveCommand):
-                    all_marks = chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, string.punctuation)
-                    while command.choices(player, game):
+                    done = False
+
+                    def finish():
+                        nonlocal done
+                        done = True
+
+                    while command.choices(player, game) and not done:
+                        all_marks = chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, string.punctuation)
                         ch_choices = ['?']
                         ch_help = [('?', 'Examine')]
                         selection = {'?': lambda: examine(player, game)}
+                        if command.ready:
+                            ch_choices.append('.')
+                            ch_help.append(('.', 'Done'))
+                            selection['.'] = finish
                         for choice in command.choices(player, game):
                             mark = next(iter(m for m in all_marks if m not in ch_choices))
                             selection[mark] = make_select(command, choice)
