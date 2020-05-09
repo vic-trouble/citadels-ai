@@ -185,6 +185,14 @@ class GamePlayEvents:
         pass
 
 
+class GameplayState(Enum):
+    START_GAME = auto()
+    START_TURN = auto()
+    TAKE_TURNS = auto()
+    END_TURN = auto()
+    END_GAME = auto()
+
+
 class GameController(EventSource):
     def __init__(self, game: Game, config=None):
         super().__init__()
@@ -192,6 +200,21 @@ class GameController(EventSource):
         self._game.add_listener(self)
         self._config = config or GamePlayConfig()
         self._player_controllers = {}
+        self._state = GameplayState.START_GAME
+
+    def play(self):
+        if self._state == GameplayState.START_GAME:
+            self.start_game()
+            self._state = GameplayState.START_TURN
+        elif self._state == GameplayState.START_TURN:
+            self.start_turn()
+            self._state = GameplayState.TAKE_TURNS
+        elif self._state == GameplayState.TAKE_TURNS:
+            self.take_turns()
+            self._state = GameplayState.END_TURN
+        elif self._state == GameplayState.END_TURN:
+            self.end_turn()
+            self._state = GameplayState.START_TURN
 
     def set_player_controller(self, player: Player, player_controller: PlayerController):
         assert player in self._game.players
@@ -303,11 +326,16 @@ class GameController(EventSource):
             if king:
                 game.crowned_player = king
 
+        if self.game_over:
+            self._state = GameplayState.END_GAME
+
     @property
     def game_over(self):
         return any(rules.is_city_complete(player) for player in self._game.players)
 
     def end_turn(self):
+        for player in self._game.players:
+            player.char = None
         self.fire_event('turn_ended')
 
     @property

@@ -212,12 +212,8 @@ def main():
         bot = game.add_player('bot{}'.format(i + 1))
         game_controller.set_player_controller(bot, BotController())
 
-    game_controller.start_game()
-
     while not game_controller.game_over:
-        game_controller.start_turn()
-        game_controller.take_turns()
-        game_controller.end_turn()
+        game_controller.play()
 
     print('\n----------------------\nGame over!\n')
     for player in game.players:
