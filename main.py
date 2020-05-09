@@ -39,6 +39,32 @@ def help_str(val):
         return str(val)
 
 
+def examine(my_player, game):
+    unusable_chars = [CharacterInfo(char).name for char in game.turn.unused_chars if char]
+    if unusable_chars:
+        print('Unusable chars: {}'.format(', '.join(unusable_chars)))
+
+    print('There are {} districts in the deck'.format(len(game.districts)))
+
+    for player in game.players:
+        king = '* ' if player == game.crowned_player else ''
+        is_me = player.player_id == my_player.player_id
+        values = {'king': king, 'plr': player.name, 'gold': player.gold}
+        values['hand'] = [help_str(d) if is_me else '?' for d in player.hand]
+        values['city'] = [help_str(d) for d in player.city]
+
+        known_char = is_me
+        if not known_char:
+            if bool(player.char):
+                player_ids = [p.player_id for p in game.players.order_by_take_turn()]
+                player_index = player_ids.index(player.player_id)
+                my_player_index = player_ids.index(my_player.player_id)
+                known_char = player_index < my_player_index
+        values['char'] = ' ({})'.format(help_str(player.char)) if known_char else ''
+
+        print('{king}{plr}{char} with {gold} gold, hand={hand}, city={city}'.format(**values))
+
+
 class TermPlayerController(PlayerController):
     def pick_char(self, char_deck: Deck, player: Player, game: Game):
         """ Should return selected char card """
@@ -49,28 +75,31 @@ class TermPlayerController(PlayerController):
     def take_turn(self, player: Player, game: Game, sink: CommandsSink):
         """ Should execute commands via sink """
 
+        def make_select(command: commands.InteractiveCommand, choice):
+            return lambda: command.select(choice)
+
         def make_exec(command: commands.Command):
             def do_exec(command: commands.Command):
                 if isinstance(command, commands.InteractiveCommand):
                     all_marks = chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, string.punctuation)
                     while command.choices(player, game):
-                        ch_choices = []
-                        ch_help = []
-                        selection = {}
+                        ch_choices = ['?']
+                        ch_help = [('?', 'Examine')]
+                        selection = {'?': lambda: examine(player, game)}
                         for choice in command.choices(player, game):
                             mark = next(iter(m for m in all_marks if m not in ch_choices))
-                            selection[mark] = choice
+                            selection[mark] = make_select(command, choice)
                             ch_choices.append(mark)
                             ch_help.append((mark, help_str(choice)))
                         ch_inp = dialog('Select', choices=ch_choices, help=OrderedDict(ch_help))
-                        command.select(selection[ch_inp])
+                        selection[ch_inp]()
                 sink.execute(command)
 
             return lambda: do_exec(command)
 
-        choices = ['.']
-        help = [('.', 'End turn')]
-        cmds = {'.': lambda: sink.end_turn()}
+        choices = ['.', '?']
+        help = [('.', 'End turn'), ('?', 'Examine')]
+        cmds = {'.': lambda: sink.end_turn(), '?': lambda: examine(player, game)}
 
         for command in sink.all_possible_commands:
             all_marks = chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, string.punctuation)
@@ -125,15 +154,7 @@ class TermGamePlayListener:
 
     def turn_started(self):
         print('\n\n---------------------------------\nNew round starts!')
-        unusable_chars = [CharacterInfo(char).name for char in self._game.turn.unused_chars if char]
-        if unusable_chars:
-            print('Unusable chars: {}'.format(', '.join(unusable_chars)))
-
-        for player in self._game.players:
-            king = '* ' if player == self._game.crowned_player else ''
-            is_me = player == self._player
-            hand = [help_str(d) if is_me else '?' for d in player.hand]
-            print('{king}{plr} with {gold} gold, hand={hand}, city={city}'.format(king=king, plr=player.name, hand=hand, city=[help_str(d) for d in player.city], gold=player.gold))
+        examine(self._player, self._game)
 
     def turn_ended(self):
         game = self._game
