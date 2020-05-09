@@ -44,7 +44,9 @@ class InteractiveCommand(Command):
     def ready(self):
         raise NotImplementedError()
 
-    # TODO: add restart()
+    def cancel(self, player: Player, game: Game):
+        # too little commands need cancel, so nop is the reasonable default
+        pass
 
 
 class CashIn(Command):
@@ -92,12 +94,14 @@ class DrawSomeCards(InteractiveCommand):
         self._draw = draw
         self._keep = keep
         assert 0 < self._keep <= self._draw
+        self._orig_card_taken = []
         self._cards_taken = []
         self._cards_to_keep = []
 
     def choices(self, player: Player, game: Game):
         if not self._cards_taken:
             self._cards_taken = [game.districts.take_from_top() for _ in range(self._draw)]
+            self._orig_card_taken = tuple(self._cards_taken)
         if len(self._cards_to_keep) < self._keep:
             return self._cards_taken
         else:
@@ -128,6 +132,11 @@ class DrawSomeCards(InteractiveCommand):
     @property
     def ready(self):
         return len(self._cards_to_keep) == self._keep
+
+    def cancel(self, player: Player, game: Game):
+        # TODO: mm... rollback a transaction?
+        for card in reversed(self._orig_card_taken):
+            game.districts.put_on_top(card)
 
 
 class Kill(InteractiveCommand):

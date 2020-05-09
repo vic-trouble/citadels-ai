@@ -46,6 +46,9 @@ class CommandsSink:
     def all_possible_commands(self):
         return chain.from_iterable(self._possible_commands.values())
 
+    def update(self):
+        self._update()
+
     @property
     def done(self):
         return self._done or not any(self._possible_commands.values())

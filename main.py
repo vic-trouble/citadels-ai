@@ -57,7 +57,7 @@ def examine(my_player, game):
         else:
             values['hand'] = ['?'] * len(player.hand)
 
-        known_char = is_me
+        known_char = is_me and player.char
         if not known_char:
             if bool(player.char):
                 player_ids = [p.player_id for p in game.players.order_by_take_turn()]
@@ -78,6 +78,7 @@ class TermPlayerController(PlayerController):
 
     def take_turn(self, player: Player, game: Game, sink: CommandsSink):
         """ Should execute commands via sink """
+        cancelled = True
 
         def make_select(command: commands.InteractiveCommand, choice):
             return lambda: command.select(choice)
@@ -91,11 +92,16 @@ class TermPlayerController(PlayerController):
                         nonlocal done
                         done = True
 
-                    while command.choices(player, game) and not done:
+                    def cancel():
+                        command.cancel(player, game)
+                        nonlocal cancelled
+                        cancelled = True
+
+                    while command.choices(player, game) and not done and not cancelled:
                         all_marks = chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, string.punctuation)
-                        ch_choices = ['?']
-                        ch_help = [('?', 'Examine')]
-                        selection = {'?': lambda: examine(player, game)}
+                        ch_choices = ['?', '!']
+                        ch_help = [('?', 'Examine'), ('!', 'Cancel')]
+                        selection = {'?': lambda: examine(player, game), '!': cancel}
                         if command.ready:
                             ch_choices.append('.')
                             ch_help.append(('.', 'Done'))
@@ -107,22 +113,33 @@ class TermPlayerController(PlayerController):
                             ch_help.append((mark, help_str(choice)))
                         ch_inp = dialog('Select', choices=ch_choices, help=OrderedDict(ch_help))
                         selection[ch_inp]()
+
+                    if cancelled:
+                        return
+
                 sink.execute(command)
 
             return lambda: do_exec(command)
 
-        choices = ['.', '?']
-        help = [('.', 'End turn'), ('?', 'Examine')]
-        cmds = {'.': lambda: sink.end_turn(), '?': lambda: examine(player, game)}
+        while cancelled:
+            cancelled = False
 
-        for command in sink.all_possible_commands:
-            all_marks = chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, string.punctuation)
-            mark = next(iter(m for m in all_marks if m not in cmds))
-            cmds[mark] = make_exec(command)
-            choices.append(mark)
-            help.append((mark, command.help))
-        inp = dialog('Your turn', choices=choices, help=OrderedDict(help))
-        cmds[inp]()
+            choices = ['.', '?']
+            help = [('.', 'End turn'), ('?', 'Examine')]
+            cmds = {'.': lambda: sink.end_turn(), '?': lambda: examine(player, game)}
+
+            for command in sink.all_possible_commands:
+                all_marks = chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, string.punctuation)
+                mark = next(iter(m for m in all_marks if m not in cmds))
+                cmds[mark] = make_exec(command)
+                choices.append(mark)
+                help.append((mark, command.help))
+
+            inp = dialog('Your turn', choices=choices, help=OrderedDict(help))
+            cmds[inp]()
+
+            if cancelled:
+                sink.update()
 
 
 class TermGamePlayListener:
@@ -236,4 +253,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print('\nBye')

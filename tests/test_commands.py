@@ -47,6 +47,35 @@ def test_draw_some_cards(player, game):
     assert len(game.districts) == num_districts - 1
 
 
+def test_draw_some_cards_cancel(player, game):
+    # arrange
+    districts = tuple(game.districts)
+
+    command = commands.DrawSomeCards(draw=2, keep=1)
+
+    # act
+    command.select(command.choices(player, game)[0])
+    command.cancel(player, game)
+
+    # assert
+    assert len(player.hand) == 0
+    assert districts == tuple(game.districts)
+
+
+def test_draw_some_cards_cancel_without_draw(player, game):
+    # arrange
+    districts = tuple(game.districts)
+
+    command = commands.DrawSomeCards(draw=2, keep=1)
+
+    # act
+    command.cancel(player, game)
+
+    # assert
+    assert len(player.hand) == 0
+    assert districts == tuple(game.districts)
+
+
 def test_draw_cards(player, game):
     # arrange
     command = commands.DrawCards(2)

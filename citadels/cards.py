@@ -183,6 +183,9 @@ class Deck:
     def put_on_bottom(self, card):
         self._cards.append(card)
 
+    def put_on_top(self, card):
+        self._cards.insert(0, card)
+
     @property
     def cards(self):
         return tuple(self._cards)

@@ -13,6 +13,17 @@ def test_take_from_top():
     assert deck.cards == (1, 2, 3)
 
 
+def test_put_on_top():
+    # arrange
+    deck = Deck([0, 1, 2, 3])
+
+    # act
+    deck.put_on_top(4)
+
+    # assert
+    assert deck.cards == (4, 0, 1, 2, 3)
+
+
 def test_put_on_bottom():
     # arrange
     deck = Deck([0, 1, 2, 3])
