@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from collections import OrderedDict
 from itertools import chain
+import os
 import string
 import sys
 assert sys.version_info[:2] >= (3, 7)
@@ -12,6 +13,11 @@ from citadels.game import Deck, Game, Player
 from citadels.gameplay import CommandsSink, GameController, PlayerController
 from citadels import rules
 from term.io import dialog
+
+
+DEBUG = True
+AUTOSAVE_FILE = 'autosave'
+QUICKSAVE_FILE = 'quicksave'
 
 
 def help_str(val):
@@ -66,6 +72,9 @@ def examine(my_player, game):
 
 
 class TermPlayerController(PlayerController):
+    def __init__(self, game_controller: GameController):
+        self._game_controller = game_controller
+
     def pick_char(self, char_deck: Deck, player: Player, game: Game):
         """ Should return selected char card """
         choices = ''.join(str(int(ch)) for ch in all_chars if ch in char_deck)
@@ -97,9 +106,22 @@ class TermPlayerController(PlayerController):
 
             return lambda: do_exec(command)
 
+        def load(filename):
+            self._game_controller.load(filename)
+            sink.end_turn()
+
         choices = ['.', '?']
         help = [('.', 'End turn'), ('?', 'Examine')]
         cmds = {'.': lambda: sink.end_turn(), '?': lambda: examine(player, game)}
+
+        if DEBUG:
+            choices.append('S')
+            help.append(('S', 'Save game'))
+            cmds['S'] = lambda: self._game_controller.save(QUICKSAVE_FILE)
+            if os.path.exists(QUICKSAVE_FILE):
+                choices.append('L')
+                help.append(('L', 'Load game'))
+                cmds['L'] = lambda: load(QUICKSAVE_FILE)
 
         for command in sink.all_possible_commands:
             all_marks = chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, string.punctuation)
@@ -112,9 +134,10 @@ class TermPlayerController(PlayerController):
 
 
 class TermGamePlayListener:
-    def __init__(self, player: Player, game: Game):
+    def __init__(self, player: Player, game: Game, game_controller: GameController):
         self._player = player
         self._game = game
+        self._game_controller = game_controller
 
     def player_added(self, player: Player):
         print('{} has joined'.format(player.name))
@@ -155,6 +178,8 @@ class TermGamePlayListener:
     def turn_started(self):
         print('\n\n---------------------------------\nNew round starts!')
         examine(self._player, self._game)
+        if DEBUG:
+            self._game_controller.save('autosave')
 
     def turn_ended(self):
         game = self._game
@@ -191,38 +216,46 @@ def main():
     parser.add_argument('--players', type=int, default=0)
     args = parser.parse_args()
 
-    num_players = args.players
-    name = args.name
+    if DEBUG and os.path.exists(AUTOSAVE_FILE):
+        game = Game(Deck(standard_chars()), Deck(simple_districts()))
+        game_controller = GameController(game)
+        game_controller.load(AUTOSAVE_FILE)
+        game = game_controller.game # TODO: this is ugly :(
+    else:
+        game = Game(Deck(standard_chars()), Deck(simple_districts()))
+        game_controller = GameController(game)
 
-    if not num_players:
-        num_players = int(dialog('Enter number of players (2..4)', '234'))
-    if not name:
-        name = dialog('Enter your name', lambda n: n.strip() != '')
+        num_players = args.players
+        name = args.name
 
-    game = Game(Deck(standard_chars()), Deck(simple_districts()))
-    game_controller = GameController(game)
+        if not num_players:
+            num_players = int(dialog('Enter number of players (2..4)', '234'))
+        if not name:
+            name = dialog('Enter your name', lambda n: n.strip() != '')
 
-    assert 2 <= num_players <= 7
-    player = game.add_player(name)
-    game_controller.set_player_controller(player, TermPlayerController())
+        assert 2 <= num_players <= 7
+        player = game.add_player(name)
 
-    game_controller.add_listener(TermGamePlayListener(player, game))
+        for i in range(num_players - 1):
+            game.add_player('bot{}'.format(i + 1))
 
-    for i in range(num_players - 1):
+    game_controller.set_player_controller(game.players[0], TermPlayerController(game_controller))
+    game_controller.add_listener(TermGamePlayListener(game.players[0], game, game_controller))
+
+    for i, bot in enumerate(game.players[1:]):
         bot = game.add_player('bot{}'.format(i + 1))
         game_controller.set_player_controller(bot, BotController())
 
-    game_controller.start_game()
-
     while not game_controller.game_over:
-        game_controller.start_turn()
-        game_controller.take_turns()
-        game_controller.end_turn()
+        game_controller.play()
 
     print('\n----------------------\nGame over!\n')
     for player in game.players:
         print('{plr} scored {score}'.format(plr=player.name, score=rules.score(player, game)))
     print('Winner is {plr}'.format(plr=game_controller.winner.name))
+
+    if DEBUG and os.path.exists(AUTOSAVE_FILE):
+        os.unlink(AUTOSAVE_FILE)
 
 
 if __name__ == '__main__':

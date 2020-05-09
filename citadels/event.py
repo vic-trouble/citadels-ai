@@ -21,6 +21,13 @@ class EventSource:
     def muted(self):
         return self._mute_count != 0
 
+    def __getstate__(self):
+        return None
+
+    def __setstate__(self, state):
+        self._listeners = []
+        self._mute_count = 0
+
 
 class EventTransaction:
     def __init__(self, event_source: EventSource, *args, **kwargs):

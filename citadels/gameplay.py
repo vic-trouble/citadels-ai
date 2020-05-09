@@ -1,6 +1,7 @@
 from collections import defaultdict
 from enum import Enum, auto
 from itertools import chain
+import pickle
 
 from citadels.cards import Card, Character, CharacterInfo, Deck, District, DistrictInfo
 from citadels import commands
@@ -185,6 +186,14 @@ class GamePlayEvents:
         pass
 
 
+class GameplayState(Enum):
+    START_GAME = auto()
+    START_TURN = auto()
+    TAKE_TURNS = auto()
+    END_TURN = auto()
+    END_GAME = auto()
+
+
 class GameController(EventSource):
     def __init__(self, game: Game, config=None):
         super().__init__()
@@ -192,6 +201,27 @@ class GameController(EventSource):
         self._game.add_listener(self)
         self._config = config or GamePlayConfig()
         self._player_controllers = {}
+        self._reloaded = False
+        self._current_player_id = None
+        self._state = GameplayState.START_GAME
+
+    @property
+    def game(self):
+        return self._game
+
+    def play(self):
+        if self._state == GameplayState.START_GAME:
+            self.start_game()
+            self._state = GameplayState.START_TURN
+        elif self._state == GameplayState.START_TURN:
+            self.start_turn()
+            self._state = GameplayState.TAKE_TURNS
+        elif self._state == GameplayState.TAKE_TURNS:
+            self.take_turns()
+            self._state = GameplayState.END_TURN
+        elif self._state == GameplayState.END_TURN:
+            self.end_turn()
+            self._state = GameplayState.START_TURN
 
     def set_player_controller(self, player: Player, player_controller: PlayerController):
         assert player in self._game.players
@@ -266,9 +296,16 @@ class GameController(EventSource):
             return
 
         game = self._game
+        playing_players = game.players.order_by_take_turn()
+
+        if self._reloaded:
+            i = [p.player_id for p in playing_players].index(self._current_player_id)
+            playing_players = playing_players[i:]
+            self._reloaded = False
 
         # TURN-CALL
-        for player in game.players.order_by_take_turn():
+        for player in playing_players:
+            self._current_player_id = player.player_id
             self.fire_event('player_plays', player, player.char)
 
             # KILLED
@@ -293,6 +330,8 @@ class GameController(EventSource):
             command_sink = CommandsSink(player, game)
             while not command_sink.done:
                 player_controller.take_turn(ShadowPlayer(player, me=True), ShadowGame(game), command_sink)
+                if self._reloaded:
+                    return
 
             if rules.is_city_complete(player) and not game.turn.first_completer:
                 game.turn.first_completer = player
@@ -303,11 +342,16 @@ class GameController(EventSource):
             if king:
                 game.crowned_player = king
 
+        if self.game_over:
+            self._state = GameplayState.END_GAME
+
     @property
     def game_over(self):
         return any(rules.is_city_complete(player) for player in self._game.players)
 
     def end_turn(self):
+        for player in self._game.players:
+            player.char = None
         self.fire_event('turn_ended')
 
     @property
@@ -338,6 +382,16 @@ class GameController(EventSource):
 
         max_gold = max(by_gold.keys())
         return by_gold[max_gold][0]
+
+    def save(self, filename):
+        with open(filename, 'wb') as f:
+            pickle.dump((self._game, self._state, self._current_player_id), f)
+
+    def load(self, filename):
+        with open(filename, 'rb') as f:
+            self._game, self._state, self._current_player_id = pickle.load(f)
+            self._game.add_listener(self)
+            self._reloaded = True
 
     def player_added(self, player: Player):
         self.fire_event('player_added', player) # TODO: shadow everything!

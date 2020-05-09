@@ -12,10 +12,12 @@ class GameError(RuntimeError):
 
 class Bank:
     def __init__(self):
-        self._accounts = defaultdict(lambda: BankAccount(self))
+        self._accounts = {}
 
     def account(self, key):
         """ Player's account """
+        if key not in self._accounts:
+            self._accounts[key] = BankAccount(self)
         return self._accounts[key]
 
 
@@ -256,6 +258,12 @@ class Game(EventSource):
         self._chars = None
         self._orig_chars = deepcopy(characters)
         self._districts = deepcopy(districts)
+
+    def __getstate__(self):
+        return (self._players, self._bank, self._crowned_player, self._turn, self._chars, self._orig_chars, self._districts)
+
+    def __setstate__(self, state):
+        self._players, self._bank, self._crowned_player, self._turn, self._chars, self._orig_chars, self._districts = state
 
     def add_player(self, name, char=None, hand=None, city=None):
         """ Add new player to the game """

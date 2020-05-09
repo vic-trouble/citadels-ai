@@ -165,6 +165,12 @@ class Card:
     def __repr__(self):
         return 'None' if self._locked else str(self._payload)
 
+    def __getstate__(self):
+        return self._payload, self._locked
+
+    def __setstate__(self, state):
+        self._payload, self._locked = state
+
 
 class Deck:
     def __init__(self, cards):
