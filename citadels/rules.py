@@ -26,6 +26,10 @@ def how_much_cost_to_build(district: District, player: Player):
     return DistrictInfo(district).cost
 
 
+def how_much_cost_to_destroy(district: District, player: Player):
+    return DistrictInfo(district).cost - 1
+
+
 def how_many_districts_can_build(player: Player):
     # ARCHITECT-BUILD3
     return 3 if player.char == Character.Architect else 1

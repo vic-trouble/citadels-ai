@@ -183,7 +183,9 @@ def test_replace_hands(game):
 def test_destroy(game):
     # arrange
     player1 = game.add_player('Player1', city=[District.Manor])
-    player2 = game.add_player('Player2', city=[District.Tavern, District.Cathedral])
+    player1.cash_in(3)
+
+    player2 = game.add_player('Player2', city=[District.Docks, District.Cathedral])
 
     command = commands.Destroy()
 
@@ -191,13 +193,14 @@ def test_destroy(game):
     assert [p.name for p in command.choices(ShadowPlayer(player1, me=True), ShadowGame(game))] == ['Player1', 'Player2']
     command.select(player2)
 
-    assert command.choices(ShadowPlayer(player1, me=True), ShadowGame(game)) == [District.Tavern, District.Cathedral]
-    command.select(District.Tavern)
+    assert command.choices(ShadowPlayer(player1, me=True), ShadowGame(game)) == [District.Docks]
+    command.select(District.Docks)
 
     assert not command.choices(ShadowPlayer(player1, me=True), ShadowGame(game))
     command.apply(player1, game)
 
     # assert
+    assert player1.gold == 1
     assert player2.city == (District.Cathedral,)
 
 

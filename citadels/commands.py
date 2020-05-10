@@ -290,14 +290,15 @@ class Destroy(InteractiveCommand):
         self._target = None
         self._card = None
 
+    def _possible_districts(self, victim: Player, destroyer: Player):
+        return [d for d in victim.city if rules.can_be_destroyed(d, victim) and rules.how_much_cost_to_destroy(d, destroyer) <= destroyer.gold]
+
     def choices(self, player: Player, game: Game):
         if not self._target:
-            return [p for p in game.players if not rules.is_city_complete(p) and
-                    any(rules.can_be_destroyed(d, p) for d in p.city)] # WARLORD-SPARE-COMPLETE, WARLORD-DESTROY-OWN
+            return [p for p in game.players if not rules.is_city_complete(p) and self._possible_districts(p, player)] # WARLORD-SPARE-COMPLETE, WARLORD-DESTROY-OWN
 
         if not self._card:
-            victim = game.players.find_by_id(self._target.player_id)
-            return [district for district in victim.city if rules.can_be_destroyed(district, victim)]
+            return self._possible_districts(self._target, player)
 
         return []
 
@@ -311,6 +312,9 @@ class Destroy(InteractiveCommand):
         target = game.players.find_by_id(self._target.player_id)
         assert not rules.is_city_complete(target)
         target.destroy_district(self._card)
+        cost = rules.how_much_cost_to_destroy(self._card, target)
+        if cost > 0:
+            player.withdraw(cost)
 
     def __repr__(self):
         return 'Destroy(target={target}, card={card})'.format(target=self._target, card=self._card)
