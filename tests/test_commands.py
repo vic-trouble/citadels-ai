@@ -182,6 +182,8 @@ def test_replace_hands(game):
 
 def test_destroy(game):
     # arrange
+    num_districts = len(game.districts)
+
     player1 = game.add_player('Player1', city=[District.Manor])
     player1.cash_in(3)
 
@@ -202,6 +204,8 @@ def test_destroy(game):
     # assert
     assert player1.gold == 1
     assert player2.city == (District.Cathedral,)
+    assert len(game.districts) == num_districts + 1
+    assert game.districts[-1] == District.Docks
 
 
 def test_build(game):

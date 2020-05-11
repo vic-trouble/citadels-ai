@@ -315,6 +315,7 @@ class Destroy(InteractiveCommand):
         cost = rules.how_much_cost_to_destroy(self._card, target)
         if cost > 0:
             player.withdraw(cost)
+        game.districts.put_on_bottom(self._card)
 
     def __repr__(self):
         return 'Destroy(target={target}, card={card})'.format(target=self._target, card=self._card)

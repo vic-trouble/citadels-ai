@@ -17,6 +17,7 @@ class BotController(PlayerController):
         if isinstance(command, InteractiveCommand):
             while command.choices(player, game):
                 command.select(random.choice(command.choices(player, game)))
+            assert command.ready
 
         if command:
             sink.execute(command)
