@@ -75,6 +75,8 @@ class DrawCards(Command):
 
     def apply(self, player: Player, game: Game):
         for _ in range(self._draw):
+            if not game.districts:
+                break
             player.take_card(game.districts.take_from_top())
 
     def __repr__(self):

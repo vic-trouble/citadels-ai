@@ -73,11 +73,14 @@ class CommandsSink:
         self._possible_commands.clear()
 
         if not self._used_commands[CommandSpecifier.Action]:
-            self._possible_commands[CommandSpecifier.Action] = rules.possible_actions()
+            self._possible_commands[CommandSpecifier.Action] = rules.possible_actions(self._game)
 
         if not self._used_commands[CommandSpecifier.Ability]:
             char_workflow = rules.CharacterWorkflow(self._player.char)
             for ability in char_workflow.abilities:
+                if isinstance(ability, commands.InteractiveCommand):
+                    if not ability.ready and not ability.choices(self._player, self._game): # rare case when Destroy cannot be applied
+                        continue
                 if ability.restriction:
                     if ability.restriction & commands.Restriction.OnAfterAction:
                         if not self._used_commands[CommandSpecifier.Action]:
@@ -214,10 +217,13 @@ class GameController(EventSource):
             self._state = GameplayState.TAKE_TURNS
         elif self._state == GameplayState.TAKE_TURNS:
             self.take_turns()
-            self._state = GameplayState.END_TURN
+            self._state = GameplayState.END_GAME if self.game_over else GameplayState.END_TURN
         elif self._state == GameplayState.END_TURN:
             self.end_turn()
             self._state = GameplayState.START_TURN
+        elif self._state == GameplayState.END_GAME:
+            self.end_game()
+            self._state = GameplayState.START_GAME
 
     def set_player_controller(self, player: Player, player_controller: PlayerController):
         assert player in self._game.players
@@ -233,11 +239,7 @@ class GameController(EventSource):
         if len(game.players) < 2:
             raise GameError('not enough players')
 
-        # CHAR-DECK
-        game._orig_chars.shuffle()
-
-        # DISTRICT-DECK
-        game.districts.shuffle()
+        game.new_game()
 
         for player in game.players:
             # START-CARDS
@@ -329,9 +331,6 @@ class GameController(EventSource):
             if king:
                 game.crowned_player = king
 
-        if self.game_over:
-            self._state = GameplayState.END_GAME
-
     @property
     def game_over(self):
         return any(rules.is_city_complete(player) for player in self._game.players)
@@ -369,6 +368,9 @@ class GameController(EventSource):
 
         max_gold = max(by_gold.keys())
         return by_gold[max_gold][0]
+
+    def end_game(self):
+        self._game.reset()
 
     def player_added(self, player: Player):
         self.fire_event('player_added', player) # TODO: shadow everything!

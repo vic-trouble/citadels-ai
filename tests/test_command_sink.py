@@ -75,6 +75,10 @@ def test_thief_abilities(game):
 def test_magician_abilities(game):
     # arrange
     player = game.add_player('Player', char=Character.Magician)
+    player.take_card(District.Watchtower)
+
+    victim = game.add_player('Victim', char=Character.King)
+    victim.take_card(District.Docks)
 
     # act
     sink = CommandsSink(player, game)
@@ -86,6 +90,9 @@ def test_magician_abilities(game):
 def test_warlord_abilities(game):
     # arrange
     player = game.add_player('Player', char=Character.Warlord)
+
+    victim = game.add_player('Victim', char=Character.King)
+    victim.build_district(District.Docks)
 
     # assert
     sink = CommandsSink(player, game)

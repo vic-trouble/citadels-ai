@@ -80,6 +80,11 @@ class Player(EventSource):
         self._hand = list(hand) if hand else []
         self._city = list(city) if city else []
 
+    def reset(self):
+        self._char = None
+        self._hand.clear()
+        self._city.clear()
+
     @property
     def player_id(self):
         """ Unique ID for a give game """
@@ -253,9 +258,10 @@ class Game(EventSource):
         self._bank = Bank()
         self._crowned_player = None
         self._turn = Turn(self)
-        self._chars = None
         self._orig_chars = deepcopy(characters)
-        self._districts = deepcopy(districts)
+        self._chars = None
+        self._orig_districts = deepcopy(districts)
+        self._districts = deepcopy(self._orig_districts)
 
     def add_player(self, name, char=None, hand=None, city=None):
         """ Add new player to the game """
@@ -303,7 +309,19 @@ class Game(EventSource):
         """ Per-turn info """
         return self._turn
 
+    def new_game(self):
+        """ Prepare data for new game """
+        self._districts = deepcopy(self._orig_districts)
+        self._districts.shuffle()  # DISTRICT-DECK
+
     def new_turn(self):
         """ Prepare data for new turn """
         self._turn = Turn(self)
         self._chars = deepcopy(self._orig_chars)
+        self._chars.shuffle()  # CHAR-DECK
+
+    def reset(self):
+        for player in self._players:
+            player.reset()
+        self._crowned_player = None
+        self._bank = Bank()
