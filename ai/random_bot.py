@@ -5,7 +5,7 @@ from citadels.game import Deck, Game, Player
 from citadels.gameplay import CommandsSink, PlayerController
 
 
-class BotController(PlayerController):
+class RandomBotController(PlayerController):
     def pick_char(self, char_deck: Deck, player: Player, game: Game):
         """ Should return selected char card """
         return random.choice(char_deck)

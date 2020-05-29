@@ -4,6 +4,17 @@ from itertools import chain
 import random
 
 
+class Color(Enum):
+    Red = auto()
+    Yellow = auto()
+    Green = auto()
+    Blue = auto()
+    Purple = auto()
+
+
+all_colors = (Color.Red, Color.Yellow, Color.Green, Color.Blue) # TODO: add purple
+
+
 class Character(IntEnum):
     Assassin = auto()
     Thief = auto()
@@ -17,6 +28,10 @@ class Character(IntEnum):
 
 all_chars = (Character.Assassin, Character.Thief, Character.Magician, Character.King,
              Character.Bishop, Character.Merchant, Character.Architect, Character.Warlord)
+
+
+char_by_color = {Color.Red: Character.Warlord, Color.Yellow: Character.King, Color.Green: Character.Merchant,
+                 Color.Blue: Character.Bishop, Color.Purple: None}
 
 
 class District(Enum):
@@ -62,17 +77,6 @@ class District(Enum):
     WishingWell = auto()
     ThroneRoom = auto()
     Quarry = auto()
-
-
-class Color(Enum):
-    Red = auto()
-    Yellow = auto()
-    Green = auto()
-    Blue = auto()
-    Purple = auto()
-
-
-all_colors = (Color.Red, Color.Yellow, Color.Green, Color.Blue) # TODO: add purple
 
 
 class DistrictInfo:

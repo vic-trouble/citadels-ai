@@ -1,3 +1,7 @@
+from itertools import chain
+import string
+
+
 def tabulate(entries, sep='  ', width=80):
     entries = list(entries)
 
@@ -30,7 +34,7 @@ def tabulate(entries, sep='  ', width=80):
     return r
 
 
-def dialog(prolog: str, choices=None, help=None):
+def dialog(prolog: str, choices=None, help=None, allow_empty=False):
     def is_iterable(obj):
         try:
             iter(obj)
@@ -47,7 +51,10 @@ def dialog(prolog: str, choices=None, help=None):
             print(prolog + ': ', end='')
         inp = input()
         if not inp:
-            continue
+            if allow_empty:
+                return ''
+            else:
+                continue
         if not choices:
             return inp
         if is_iterable(choices):
@@ -58,3 +65,32 @@ def dialog(prolog: str, choices=None, help=None):
                 return inp
         else:
             raise TypeError('Invalid choices')
+
+
+def assign_keys(choices):
+    res = ['?'] * len(choices)
+    all_marks = tuple(chain(string.ascii_lowercase, string.ascii_uppercase, string.digits))
+    choices = list(enumerate(choices))
+    orig_choices = list(choices)
+    choices_update = list(choices)
+    j = 0
+    while choices:
+        for i, choice in choices:
+            if j < len(choice):
+                mark = choice[j].lower()
+            else:
+                mark = next(iter(mark for mark in all_marks if mark not in res))
+            if mark not in res:
+                res[i] = mark
+                choices_update.remove((i, choice))
+        j += 1
+        choices = choices_update
+    return res
+
+
+def emphasize(word, letter):
+    if letter in word.lower():
+        word = word.lower()
+        i = word.index(letter)
+        return word[:i] + letter.upper() + word[i+1:]
+    return word

@@ -1,17 +1,17 @@
 from argparse import ArgumentParser
 from collections import OrderedDict
-from itertools import chain
-import string
 import sys
 assert sys.version_info[:2] >= (3, 7)
 
-from ai.bot import BotController
+from ai.naive_bot import NaiveBotController
+from ai.random_bot import RandomBotController
 from citadels.cards import Card, Character, CharacterInfo, Color, District, DistrictInfo, all_chars, simple_districts, standard_chars
 from citadels import commands
 from citadels.game import Deck, Game, Player
 from citadels.gameplay import CommandsSink, GameController, PlayerController
+from citadels import shadow
 from citadels import rules
-from term.io import dialog
+from term import io
 
 
 def help_str(val):
@@ -21,6 +21,7 @@ def help_str(val):
             return '{name} ({color})'.format(name=info.name, color=help_str(info.color))
         else:
             return info.name
+
     elif isinstance(val, District):
         info = DistrictInfo(val)
         return '{name} ({cost} {color})'.format(name=info.name, cost=info.cost,
@@ -33,8 +34,16 @@ def help_str(val):
             Color.Yellow: 'Y',
             Color.Purple: 'P',
         }[val]
+
     elif isinstance(val, Card):
         return '?' if not val else help_str(val)
+
+    elif isinstance(val, shadow.ShadowPlayer):
+        return val.name
+
+    elif isinstance(val, Player):
+        return val.name
+
     else:
         return str(val)
 
@@ -47,15 +56,12 @@ def examine(my_player, game):
     print('There are {} districts in the deck'.format(len(game.districts)))
 
     for player in game.players:
-        king = '* ' if player == game.crowned_player else ''
-        values = {'king': king, 'plr': player.name, 'gold': player.gold}
-        values['city'] = [help_str(d) for d in player.city]
+        king = '* ' if player == game.crowned_player else '  '
+        values = {'king': king, 'plr': player.name, 'gold': player.gold,
+                  'city': ', '.join(help_str(d) for d in player.city), 'city_size': len(player.city)}
 
         is_me = player.player_id == my_player.player_id
-        if is_me:
-            values['hand'] = [help_str(d) for d in my_player.hand]
-        else:
-            values['hand'] = ['?'] * len(player.hand)
+        values['hand'] = ', '.join(help_str(d) if is_me else '?' for d in my_player.hand)
 
         known_char = is_me and player.char
         if not known_char:
@@ -65,16 +71,21 @@ def examine(my_player, game):
                 my_player_index = player_ids.index(my_player.player_id)
                 known_char = player_index < my_player_index
         values['char'] = ' ({})'.format(help_str(player.char)) if known_char else ''
+        values['score'] = rules.score(player, game, with_bonuses=True)
 
-        print('{king}{plr}{char} with {gold} gold, hand={hand}, city={city}'.format(**values))
+        print('{king}[{score}] {plr}{char} with {gold} gold | hand=[{hand}] | city({city_size})=[{city}]'.format(**values))
 
 
 class TermPlayerController(PlayerController):
     def pick_char(self, char_deck: Deck, player: Player, game: Game):
         """ Should return selected char card """
-        choices = ''.join(str(int(ch)) for ch in all_chars if ch in char_deck)
-        help = OrderedDict({str(int(ch)): help_str(ch) for ch in all_chars if ch in char_deck})
-        return Character(int(dialog('Pick a character for this round', choices=choices, help=help)))
+        chars = [ch for ch in all_chars if ch in char_deck]
+        desc = [help_str(ch) for ch in chars]
+        keys = io.assign_keys(desc)
+        help = OrderedDict({key: io.emphasize(help_str(ch), key) for key, ch in zip(keys, chars)})
+        inp = io.dialog('Pick a character for this round', choices=''.join(keys), help=help)
+        index = keys.index(inp)
+        return chars[index]
 
     def take_turn(self, player: Player, game: Game, sink: CommandsSink):
         """ Should execute commands via sink """
@@ -98,7 +109,6 @@ class TermPlayerController(PlayerController):
                         cancelled = True
 
                     while command.choices(player, game) and not done and not cancelled:
-                        all_marks = chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, string.punctuation)
                         ch_choices = ['?', '!']
                         ch_help = [('?', 'Examine'), ('!', 'Cancel')]
                         selection = {'?': lambda: examine(player, game), '!': cancel}
@@ -106,12 +116,14 @@ class TermPlayerController(PlayerController):
                             ch_choices.append('.')
                             ch_help.append(('.', 'Done'))
                             selection['.'] = finish
-                        for choice in command.choices(player, game):
-                            mark = next(iter(m for m in all_marks if m not in ch_choices))
-                            selection[mark] = make_select(command, choice)
-                            ch_choices.append(mark)
-                            ch_help.append((mark, help_str(choice)))
-                        ch_inp = dialog('Select', choices=ch_choices, help=OrderedDict(ch_help))
+                        all_choices = command.choices(player, game)
+                        desc = [help_str(choice) for choice in all_choices]
+                        keys = io.assign_keys(desc)
+                        for choice, choice_desc, key in zip(all_choices, desc, keys):
+                            selection[key] = make_select(command, choice)
+                            ch_choices.append(key)
+                            ch_help.append((key, io.emphasize(choice_desc, key)))
+                        ch_inp = io.dialog('Select', choices=ch_choices, help=OrderedDict(ch_help))
                         selection[ch_inp]()
 
                     if cancelled:
@@ -128,14 +140,15 @@ class TermPlayerController(PlayerController):
             help = [('.', 'End turn'), ('?', 'Examine')]
             cmds = {'.': lambda: sink.end_turn(), '?': lambda: examine(player, game)}
 
-            for command in sink.all_possible_commands:
-                all_marks = chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, string.punctuation)
-                mark = next(iter(m for m in all_marks if m not in cmds))
-                cmds[mark] = make_exec(command)
-                choices.append(mark)
-                help.append((mark, command.help))
+            all_commands = list(sink.all_possible_commands)
+            desc = [command.help for command in all_commands]
+            keys = io.assign_keys(desc)
+            for command, command_desc, key in zip(all_commands, desc, keys):
+                cmds[key] = make_exec(command)
+                choices.append(key)
+                help.append((key, io.emphasize(command_desc, key)))
 
-            inp = dialog('Your turn', choices=choices, help=OrderedDict(help))
+            inp = io.dialog('Your turn', choices=choices, help=OrderedDict(help))
             cmds[inp]()
 
             if cancelled:
@@ -172,7 +185,9 @@ class TermGamePlayListener:
         pass
 
     def player_taken_card(self, player: Player, district: District):
-        print('{plr} has taken {card} card'.format(plr=player.name, card=DistrictInfo(district).name))
+        is_me = player.player_id == self._player.player_id
+        card = DistrictInfo(district).name if is_me else 'a'
+        print('{plr} has taken {card} card'.format(plr=player.name, card=card))
 
     def player_removed_card(self, player: Player, district: District):
         print('{plr} has removed {card} card'.format(plr=player.name, card=DistrictInfo(district).name))
@@ -187,6 +202,9 @@ class TermGamePlayListener:
         print('\n\n---------------------------------\nNew round starts!')
         examine(self._player, self._game)
 
+    def _continue(self):
+        io.dialog('Enter to continue', allow_empty=True)
+
     def turn_ended(self):
         game = self._game
         print('\nEnd of turn')
@@ -194,9 +212,11 @@ class TermGamePlayListener:
             print('Nobody is robbed this turn!')
         if not game.players.find_by_char(game.turn.killed_char):
             print('Nobody is killed this turn!')
+        self._continue()
 
     def player_killed(self, player: Player):
         print('{plr} is killed'.format(plr=player.name))
+        self._continue()
 
     def player_robbed(self, player: Player, gold: int):
         thief = self._game.players.find_by_char(Character.Thief)
@@ -204,6 +224,10 @@ class TermGamePlayListener:
 
     def player_plays(self, player: Player, char: Character):
         print('\n{plr} is {char}'.format(plr=player.name, char=help_str(char)))
+
+    def player_played(self, player: Player):
+        if player.player_id != self._player.player_id:
+            self._continue()
 
     def player_swapped_hands(self, player, other_player):
         if player.char == Character.Magician:
@@ -219,29 +243,30 @@ class TermGamePlayListener:
 def main():
     parser = ArgumentParser()
     parser.add_argument('--name', type=str, default='')
-    parser.add_argument('--players', type=int, default=0)
+    parser.add_argument('--bots', type=str, default='NRR')
     args = parser.parse_args()
 
-    num_players = args.players
+    bots = args.bots
     name = args.name
 
-    if not num_players:
-        num_players = int(dialog('Enter number of players (2..4)', '234'))
     if not name:
-        name = dialog('Enter your name', lambda n: n.strip() != '')
+        name = io.dialog('Enter your name', lambda n: n.strip() != '')
 
     game = Game(Deck(standard_chars()), Deck(simple_districts()))
     game_controller = GameController(game)
 
-    assert 2 <= num_players <= 7
+    assert 1 <= len(bots) <= 3
+    assert all(b in 'NR' for b in bots)
+
     player = game.add_player(name)
     game_controller.set_player_controller(player, TermPlayerController())
 
     game_controller.add_listener(TermGamePlayListener(player, game))
 
-    for i in range(num_players - 1):
+    bot_factory = {'R': RandomBotController, 'N': NaiveBotController}
+    for i, b in enumerate(bots):
         bot = game.add_player('bot{}'.format(i + 1))
-        game_controller.set_player_controller(bot, BotController())
+        game_controller.set_player_controller(bot, bot_factory[b]())
 
     while not game_controller.game_over:
         game_controller.play()

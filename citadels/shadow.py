@@ -38,8 +38,9 @@ class ShadowPlayer:
 class ShadowGame:
     """ Read-only copy of Game hiding all private info for passing into bot's controller """
 
-    def __init__(self, game: Game):
-        shadow_players = [ShadowPlayer(p) for p in game.players]
+    def __init__(self, player: Player, game: Game):
+        is_me = lambda p: p == player
+        shadow_players = [ShadowPlayer(p, me=is_me(p)) for p in game.players]
         crowned_index = game.players.crowned_index
         self.crowned_player = shadow_players[crowned_index] if crowned_index != -1 else None
         self.players = PlayersProxy(shadow_players, self.crowned_player)

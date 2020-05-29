@@ -97,13 +97,13 @@ def test_kill(player, game):
     game.turn.drop_char(Character.Architect)
 
     # act
-    choices = command.choices(ShadowPlayer(player, me=True), ShadowGame(game))
+    choices = command.choices(ShadowPlayer(player, me=True), ShadowGame(player, game))
     assert choices
     assert Character.Assassin not in choices
     assert Character.Architect not in choices
 
     command.select(Character.King)
-    assert not command.choices(ShadowPlayer(player, me=True), ShadowGame(game))
+    assert not command.choices(ShadowPlayer(player, me=True), ShadowGame(player, game))
 
     command.apply(player, game)
 
@@ -119,7 +119,7 @@ def test_rob(player, game):
     game.turn.killed_char = Character.King
 
     # act
-    choices = command.choices(ShadowPlayer(player, me=True), ShadowGame(game))
+    choices = command.choices(ShadowPlayer(player, me=True), ShadowGame(player, game))
     assert choices
     assert Character.Assassin not in choices
     assert Character.King not in choices
@@ -127,7 +127,7 @@ def test_rob(player, game):
     assert Character.Architect not in choices
 
     command.select(Character.Bishop)
-    assert not command.choices(ShadowPlayer(player, me=True), ShadowGame(game))
+    assert not command.choices(ShadowPlayer(player, me=True), ShadowGame(player, game))
 
     command.apply(player, game)
 
@@ -143,11 +143,11 @@ def test_swap_hands(game):
     command = commands.SwapHands()
 
     # act
-    choices = command.choices(ShadowPlayer(player1, me=True), ShadowGame(game))
+    choices = command.choices(ShadowPlayer(player1, me=True), ShadowGame(player, game))
     assert [p.name for p in choices] == ['Player2']
 
     command.select(player2)
-    assert not command.choices(ShadowPlayer(player1, me=True), ShadowGame(game))
+    assert not command.choices(ShadowPlayer(player1, me=True), ShadowGame(player, game))
 
     command.apply(player1, game)
 
@@ -165,10 +165,10 @@ def test_replace_hands(game):
     num_districts = len(game.districts)
 
     # act
-    assert command.choices(ShadowPlayer(player, me=True), ShadowGame(game)) == [District.Cathedral, District.Tavern, District.Cathedral]
+    assert command.choices(ShadowPlayer(player, me=True), ShadowGame(player, game)) == [District.Cathedral, District.Tavern, District.Cathedral]
 
     command.select(District.Cathedral)
-    assert command.choices(ShadowPlayer(player, me=True), ShadowGame(game)) == [District.Tavern, District.Cathedral]
+    assert command.choices(ShadowPlayer(player, me=True), ShadowGame(player, game)) == [District.Tavern, District.Cathedral]
 
     command.apply(player, game)
 
@@ -192,13 +192,13 @@ def test_destroy(game):
     command = commands.Destroy()
 
     # act
-    assert [p.name for p in command.choices(ShadowPlayer(player1, me=True), ShadowGame(game))] == ['Player1', 'Player2']
+    assert [p.name for p in command.choices(ShadowPlayer(player1, me=True), ShadowGame(player1, game))] == ['Player1', 'Player2']
     command.select(player2)
 
-    assert command.choices(ShadowPlayer(player1, me=True), ShadowGame(game)) == [District.Docks]
+    assert command.choices(ShadowPlayer(player1, me=True), ShadowGame(player1, game)) == [District.Docks]
     command.select(District.Docks)
 
-    assert not command.choices(ShadowPlayer(player1, me=True), ShadowGame(game))
+    assert not command.choices(ShadowPlayer(player1, me=True), ShadowGame(player1, game))
     command.apply(player1, game)
 
     # assert

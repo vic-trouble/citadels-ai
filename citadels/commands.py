@@ -142,9 +142,9 @@ class DrawSomeCards(InteractiveCommand):
 
 
 class Kill(InteractiveCommand):
-    def __init__(self, **kwargs):
+    def __init__(self, char=None, **kwargs):
         super().__init__(**kwargs)
-        self._char = None
+        self._char = char
 
     def choices(self, player: Player, game: Game):
         if self._char:
@@ -176,9 +176,9 @@ class Kill(InteractiveCommand):
 
 
 class Rob(InteractiveCommand):
-    def __init__(self, **kwargs):
+    def __init__(self, char=None, **kwargs):
         super().__init__(**kwargs)
-        self._char = None
+        self._char = char
 
     def choices(self, player: Player, game: Game):
         if self._char:
@@ -211,9 +211,9 @@ class Rob(InteractiveCommand):
 
 
 class SwapHands(InteractiveCommand):
-    def __init__(self, **kwargs):
+    def __init__(self, target=None, **kwargs):
         super().__init__(**kwargs)
-        self._target = None
+        self._target = target
 
     def choices(self, player: Player, game: Game):
         return [p for p in game.players if p.player_id != player.player_id] if not self._target else []
@@ -251,9 +251,9 @@ class SwapHands(InteractiveCommand):
 
 
 class ReplaceHand(InteractiveCommand):
-    def __init__(self, **kwargs):
+    def __init__(self, cards=None, **kwargs):
         super().__init__(**kwargs)
-        self._cards = []
+        self._cards = cards or []
 
     def choices(self, player: Player, game: Game):
         cards = list(player.hand)
@@ -287,10 +287,10 @@ class ReplaceHand(InteractiveCommand):
 
 
 class Destroy(InteractiveCommand):
-    def __init__(self, **kwargs):
+    def __init__(self, target=None, card=None, **kwargs):
         super().__init__(**kwargs)
-        self._target = None
-        self._card = None
+        self._target = target
+        self._card = card
 
     def _possible_districts(self, victim: Player, destroyer: Player):
         return [d for d in victim.city if rules.can_be_destroyed(d, victim) and rules.how_much_cost_to_destroy(d, destroyer) <= destroyer.gold]

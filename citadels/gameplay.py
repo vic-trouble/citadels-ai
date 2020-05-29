@@ -1,6 +1,7 @@
 from collections import defaultdict
 from enum import Enum, auto
 from itertools import chain
+import random
 
 from citadels.cards import Card, Character, CharacterInfo, Deck, District, DistrictInfo
 from citadels import commands
@@ -184,6 +185,9 @@ class GamePlayEvents:
     def player_plays(self, player: Player, char: Character):
         pass
 
+    def player_played(self, player: Player):
+        pass
+
     def player_swapped_hands(self, player, other_player):
         pass
 
@@ -252,7 +256,7 @@ class GameController(EventSource):
 
         # START-CROWN
         if not game.crowned_player:
-            game.crowned_player = game.players[0]
+            game.crowned_player = random.choice(game.players)
 
     def start_turn(self):
         game = self._game
@@ -281,7 +285,7 @@ class GameController(EventSource):
         # TURN-PICK-FIRST, TURN-PICK
         for player in game.players.order_by_char_selection():
             controller = self.player_controller(player)
-            selected_char = controller.pick_char(game.characters, ShadowPlayer(player), ShadowGame(game))
+            selected_char = controller.pick_char(game.characters, ShadowPlayer(player, me=True), ShadowGame(player, game))
             game.characters.take(selected_char)
             player.char = selected_char
 
@@ -320,10 +324,12 @@ class GameController(EventSource):
             player_controller = self.player_controller(player)
             command_sink = CommandsSink(player, game)
             while not command_sink.done:
-                player_controller.take_turn(ShadowPlayer(player, me=True), ShadowGame(game), command_sink)
+                player_controller.take_turn(ShadowPlayer(player, me=True), ShadowGame(player, game), command_sink)
 
             if rules.is_city_complete(player) and not game.turn.first_completer:
                 game.turn.first_completer = player
+
+            self.fire_event('player_played', player)
 
         # KING-KILLED
         if game.turn.killed_char == Character.King:

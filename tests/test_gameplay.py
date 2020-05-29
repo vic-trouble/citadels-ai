@@ -65,7 +65,7 @@ def test_start_game(game):
     assert player2.gold == 2
 
     # START-CROWN
-    assert game.crowned_player == player1
+    assert game.crowned_player in (player1, player2)
 
 
 def test_pick_chars(game):
