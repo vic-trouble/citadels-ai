@@ -69,6 +69,10 @@ def test_emphasize_coloring_m():
     assert emphasize(f'{Fore.GREEN}merchant', 'm') == f'{Fore.GREEN}Merchant'
 
 
+def test_emphasize_with_numbers():
+    assert emphasize('Take 2 cards', 't') == 'Take 2 cards'
+
+
 def test_lex():
     text = f'Quick {Fore.RED}fox{Style.RESET_ALL} jumped over a lazy dog!'
     lexems = ['Quick', Fore.RED, 'fox', Style.RESET_ALL, 'jumped', 'over', 'a', 'lazy', 'dog', '!']

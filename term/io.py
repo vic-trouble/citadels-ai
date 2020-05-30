@@ -148,8 +148,9 @@ def is_escape_code(text):
 
 def join_text(lexems):
     r = []
+    word = set(chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, '_'))
     for lexem in lexems:
-        if r and lexem.isidentifier() and any(not is_escape_code(prev) for prev in r):
+        if r and lexem[0] in word and any(not is_escape_code(prev) for prev in r):
             r.append(' ')
         r.append(lexem)
     return ''.join(r)
