@@ -10,7 +10,18 @@ def test_take_from_top():
 
     # assert
     assert card == 0
-    assert deck.cards == [1, 2, 3]
+    assert deck.cards == (1, 2, 3)
+
+
+def test_put_on_top():
+    # arrange
+    deck = Deck([0, 1, 2, 3])
+
+    # act
+    deck.put_on_top(4)
+
+    # assert
+    assert deck.cards == (4, 0, 1, 2, 3)
 
 
 def test_put_on_bottom():
@@ -21,7 +32,7 @@ def test_put_on_bottom():
     deck.put_on_bottom(4)
 
     # assert
-    assert deck.cards == [0, 1, 2, 3, 4]
+    assert deck.cards == (0, 1, 2, 3, 4)
 
 
 def test_shuffle():  # TODO: it fails once in a while

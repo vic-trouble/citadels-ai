@@ -11,6 +11,7 @@ class ShadowTurn:
         self.unused_chars = turn.unused_chars
         self.killed_char = turn.killed_char
         self.robbed_char = turn.robbed_char
+        self.first_completer = turn.first_completer
 
 
 class ShadowPlayer:
@@ -37,10 +38,12 @@ class ShadowPlayer:
 class ShadowGame:
     """ Read-only copy of Game hiding all private info for passing into bot's controller """
 
-    def __init__(self, game: Game):
-        shadow_players = [ShadowPlayer(p) for p in game.players]
+    def __init__(self, player: Player, game: Game):
+        is_me = lambda p: p == player
+        shadow_players = [ShadowPlayer(p, me=is_me(p)) for p in game.players]
         crowned_index = game.players.crowned_index
         self.crowned_player = shadow_players[crowned_index] if crowned_index != -1 else None
         self.players = PlayersProxy(shadow_players, self.crowned_player)
         self.turn = ShadowTurn(game.turn)
-        self.districts = Deck([Card(district).facedown for district in game.districts])
+        #self.districts = Deck([Card(district).facedown for district in game.districts])
+        self.districts = game.districts # TODO: temporary regression

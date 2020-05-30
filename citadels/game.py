@@ -1,7 +1,8 @@
 from collections import defaultdict
 from copy import deepcopy
 
-from citadels.cards import Character, Deck
+from citadels.cards import Character, Deck, District
+from citadels.event import EventSource
 
 
 class GameError(RuntimeError):
@@ -43,14 +44,46 @@ class BankAccount:
         return amount
 
 
-class Player:
-    def __init__(self, player_id, game):
+class PlayerListener:
+    def cashed_in(self, player, amount: int, source: str):
+        pass
+
+    def withdrawn(self, player, amount: int):
+        pass
+
+    def picked_char(self, player, char: Character):
+        pass
+
+    def taken_card(self, player, district: District):
+        pass
+
+    def district_built(self, player, district: District):
+        pass
+
+    def district_lost(self, player, district: District):
+        pass
+
+    def swapped_hands(self, player, other_player):
+        pass
+
+    def replaced_hand(self, player, amount: int):
+        pass
+
+
+class Player(EventSource):
+    def __init__(self, player_id, game, char=None, hand=None, city=None):
+        super().__init__()
         self.name = ''
         self._id = player_id
         self._game = game
+        self._char = char
+        self._hand = list(hand) if hand else []
+        self._city = list(city) if city else []
+
+    def reset(self):
         self._char = None
-        self.hand = []
-        self.city = []
+        self._hand.clear()
+        self._city.clear()
 
     @property
     def player_id(self):
@@ -66,17 +99,17 @@ class Player:
         """ Amount of player's gold """
         return self._bank_account.balance
 
-    #@property
-    #def hand(self):
-    #    return self._hand
-
-    def cash_in(self, amount):
+    def cash_in(self, amount, source=''):
         """ Give some gold """
-        return self._bank_account.cash_in(amount)
+        amount = self._bank_account.cash_in(amount)
+        self.fire_event('cashed_in', self, amount, source)
+        return amount
 
     def withdraw(self, amount):
         """ Remove some gold """
-        return self._bank_account.withdraw(amount)
+        amount = self._bank_account.withdraw(amount)
+        self.fire_event('withdrawn', self, amount)
+        return amount
 
     def __repr__(self):
         return 'Player("{}")'.format(self.name)
@@ -88,17 +121,40 @@ class Player:
     @char.setter
     def char(self, value):
         self._char = value
+        self.fire_event('picked_char', self, self._char)
 
-    #@property
-    #def city(self):
-    #    return list(self._city)
+    @property
+    def city(self):
+        return tuple(self._city)
+
+    @property
+    def hand(self):
+        return tuple(self._hand)
+
+    def take_card(self, district: District):
+        self._hand.append(district)
+        self.fire_event('taken_card', self, district)
+
+    def remove_card(self, district: District):
+        self._hand.remove(district)
+        self.fire_event('removed_card', self, district)
+
+    def build_district(self, district: District):
+        self._city.append(district)
+        self.fire_event('district_built', self, district)
+
+    def destroy_district(self, district: District):
+        self._city.remove(district)
+        self.fire_event('district_lost', self, district)
 
 
 class Turn:
-    def __init__(self):
+    def __init__(self, game):
+        self._game = game
         self._unused_chars = []
-        self.killed_char = None
-        self.robbed_char = None
+        self._killed_char = None
+        self._robbed_char = None
+        self._first_completer = None
 
     def drop_char(self, char: Character):
         """ Remove character from playable set """
@@ -106,7 +162,35 @@ class Turn:
 
     @property
     def unused_chars(self):
-        return self._unused_chars
+        return tuple(self._unused_chars)
+
+    @property
+    def killed_char(self):
+        return self._killed_char
+
+    @killed_char.setter
+    def killed_char(self, char):
+        assert char
+        self._killed_char = char
+        self._game.fire_event('murder_announced', char)
+
+    @property
+    def robbed_char(self):
+        return self._robbed_char
+
+    @robbed_char.setter
+    def robbed_char(self, char):
+        assert char
+        self._robbed_char = char
+        self._game.fire_event('theft_announced', char)
+
+    @property
+    def first_completer(self):
+        return self._first_completer
+
+    @first_completer.setter
+    def first_completer(self, player):
+        self._first_completer = player
 
 
 class PlayersProxy:
@@ -127,13 +211,13 @@ class PlayersProxy:
         """ Players in order of character selection """
         index = self.crowned_index
         if index == -1:
-            return list(self._players)
+            return tuple(self._players)
         else:
-            return self._players[index:] + self._players[:index]
+            return tuple(self._players[index:] + self._players[:index])
 
     def order_by_take_turn(self):
         """ Players in order of making their turn """
-        return list(sorted(self._players, key=lambda p: p.char))
+        return tuple(sorted(self._players, key=lambda p: p.char))
 
     def find_by_name(self, name):
         """ Return first player with given name or None """
@@ -153,22 +237,39 @@ class PlayersProxy:
         return next((p for p in self._players if p.char == char), None)
 
 
-class Game:
+class GameListener:
+    def player_added(self, player: Player):
+        pass
+
+    def player_crowned(self, player: Player):
+        pass
+
+    def murder_announced(self, char: Character):
+        pass
+
+    def theft_announced(self, char: Character):
+        pass
+
+
+class Game(EventSource):
     def __init__(self, characters: Deck, districts: Deck):
+        super().__init__()
         self._players = []
         self._bank = Bank()
         self._crowned_player = None
-        self._turn = None
-        self._chars = None
+        self._turn = Turn(self)
         self._orig_chars = deepcopy(characters)
-        self._districts = deepcopy(districts)
+        self._chars = None
+        self._orig_districts = deepcopy(districts)
+        self._districts = deepcopy(self._orig_districts)
 
-    def add_player(self, name):
+    def add_player(self, name, char=None, hand=None, city=None):
         """ Add new player to the game """
         player_id = len(self._players) + 1
-        player = Player(player_id, self)
+        player = Player(player_id, self, char=char, hand=hand, city=city)
         player.name = name
         self._players.append(player)
+        self.fire_event('player_added', player)
         return player
 
     @property
@@ -201,13 +302,26 @@ class Game:
         """ Player who has the crown now """
         assert player in self._players
         self._crowned_player = player
+        self.fire_event('player_crowned', player)
 
     @property
     def turn(self):
         """ Per-turn info """
         return self._turn
 
+    def new_game(self):
+        """ Prepare data for new game """
+        self._districts = deepcopy(self._orig_districts)
+        self._districts.shuffle()  # DISTRICT-DECK
+
     def new_turn(self):
         """ Prepare data for new turn """
-        self._turn = Turn()
+        self._turn = Turn(self)
         self._chars = deepcopy(self._orig_chars)
+        self._chars.shuffle()  # CHAR-DECK
+
+    def reset(self):
+        for player in self._players:
+            player.reset()
+        self._crowned_player = None
+        self._bank = Bank()
