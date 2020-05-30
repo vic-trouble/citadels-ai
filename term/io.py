@@ -112,9 +112,13 @@ def emphasize(text: str, letter: str):
     return join_text(r)
 
 
+def is_punctuation(c):
+    return c in ',.?!;:()'
+
 def lex(text):
     cur = ''
     word = set(chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, '_'))
+
     for c in text + '\0':
         if is_escape_code(cur): # simplified escape code parsing
             cur += c
@@ -136,6 +140,11 @@ def lex(text):
             if cur:
                 yield cur
             cur = c
+        elif is_punctuation(c):
+            if cur:
+                yield cur
+                cur = ''
+            yield c
         else:
             if cur:
                 yield cur
@@ -150,7 +159,12 @@ def join_text(lexems):
     r = []
     word = set(chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, '_'))
     for lexem in lexems:
-        if r and lexem[0] in word and any(not is_escape_code(prev) for prev in r):
+        if r and (lexem[0] in word or is_punctuation(lexem)) and any(not is_escape_code(prev) for prev in r):
             r.append(' ')
         r.append(lexem)
-    return ''.join(r)
+
+    # fix punctuation
+    s = ''.join(r)
+    for punct, fix in [('( ', '('), (' )', ')'), (' ,', ','), (' .', ','), (' !', '!'), (' ?', '?')]:
+        s = s.replace(punct, fix)
+    return s

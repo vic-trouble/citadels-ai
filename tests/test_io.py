@@ -79,9 +79,21 @@ def test_lex():
     assert list(lex(text)) == lexems
 
 
+def test_lex_punctuation():
+    text = 'Take 2 cards (1 to keep, sure)'
+    lexems = ['Take', '2', 'cards', '(', '1', 'to', 'keep', ',', 'sure', ')']
+    assert list(lex(text)) == lexems
+
+
 def test_join_text():
-    text = f'Quick{Fore.RED} fox{Style.RESET_ALL} jumped over a lazy dog!'
     lexems = ['Quick', Fore.RED, 'fox', Style.RESET_ALL, 'jumped', 'over', 'a', 'lazy', 'dog', '!']
+    text = f'Quick{Fore.RED} fox{Style.RESET_ALL} jumped over a lazy dog!'
+    assert join_text(lexems) == text
+
+
+def test_join_text_with_punctuation():
+    lexems = ['Take', '2', 'cards', '(', '1', 'to', 'keep', ',', 'sure', ')']
+    text = 'Take 2 cards (1 to keep, sure)'
     assert join_text(lexems) == text
 
 
