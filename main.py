@@ -224,8 +224,11 @@ class TermGamePlayListener:
         thief = self._game.players.find_by_char(Character.Thief)
         print('{thief} wants to rob the {char}!'.format(thief=help_str(thief.name), char=help_str(char)))
 
-    def player_cashed_in(self, player: Player, amount: int):
-        print('{plr} has taken {amount} gold'.format(plr=help_str(player.name), amount=help_str(amount)))
+    def player_cashed_in(self, player: Player, amount: int, source: str):
+        if source:
+            print('{plr} has taken {amount} gold ({source})'.format(plr=help_str(player.name), amount=help_str(amount), source=source))
+        else:
+            print('{plr} has taken {amount} gold'.format(plr=help_str(player.name), amount=help_str(amount)))
 
     def player_withdrawn(self, player: Player, amount: int):
         print('{plr} has paid {amount} gold'.format(plr=help_str(player.name), amount=help_str(amount)))

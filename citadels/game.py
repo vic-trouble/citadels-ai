@@ -45,7 +45,7 @@ class BankAccount:
 
 
 class PlayerListener:
-    def cashed_in(self, player, amount: int):
+    def cashed_in(self, player, amount: int, source: str):
         pass
 
     def withdrawn(self, player, amount: int):
@@ -99,10 +99,10 @@ class Player(EventSource):
         """ Amount of player's gold """
         return self._bank_account.balance
 
-    def cash_in(self, amount):
+    def cash_in(self, amount, source=''):
         """ Give some gold """
         amount = self._bank_account.cash_in(amount)
-        self.fire_event('cashed_in', self, amount)
+        self.fire_event('cashed_in', self, amount, source)
         return amount
 
     def withdraw(self, amount):

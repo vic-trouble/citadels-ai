@@ -112,7 +112,7 @@ class CommandsSink:
             color = CharacterInfo(self._player.char).color
             income = sum(DistrictInfo(district).color == color for district in self._player.city)
             if income:
-                self._possible_commands[CommandSpecifier.Income].append(commands.CashIn(income))
+                self._possible_commands[CommandSpecifier.Income].append(commands.CashIn(income, source='income'))
 
         self._assign_specifiers()
 
@@ -150,7 +150,7 @@ class GamePlayEvents:
     def theft_announced(self, char: Character):
         pass
 
-    def player_cashed_in(self, player: Player, amount: int):
+    def player_cashed_in(self, player: Player, amount: int, source: str):
         pass
 
     def player_withdrawn(self, player: Player, amount: int):
@@ -394,8 +394,8 @@ class GameController(EventSource):
     def theft_announced(self, char: Character):
         self.fire_event('theft_announced', char)
 
-    def cashed_in(self, player: Player, amount: int):
-        self.fire_event('player_cashed_in', player, amount)
+    def cashed_in(self, player: Player, amount: int, source: str):
+        self.fire_event('player_cashed_in', player, amount, source)
 
     def withdrawn(self, player: Player, amount: int):
         self.fire_event('player_withdrawn', player, amount)

@@ -5,7 +5,7 @@ from citadels import commands
 
 def possible_actions(game: Game):
     """ Normal per-turn actions: MYTURN-TAKE-OR-DRAW """
-    actions = [commands.CashIn(2)]
+    actions = [commands.CashIn(2, source='action')]
     if len(game.districts) >= 2:
         actions.append(commands.DrawSomeCards(draw=2, keep=1))
     return actions
@@ -19,7 +19,7 @@ class CharacterWorkflow:
             Character.Thief: [commands.Rob()],
             Character.Magician: [commands.SwapHands(), commands.ReplaceHand()],
             #Character.King: [commands.TakeCrown(restriction=commands.Restriction.OnStartTurn|compulsory)], # TODO: ?
-            Character.Merchant: [commands.CashIn(1, restriction=commands.Restriction.OnAfterAction|compulsory)],  # MERCHANT-GOLD
+            Character.Merchant: [commands.CashIn(1, source='ability', restriction=commands.Restriction.OnAfterAction|compulsory)],  # MERCHANT-GOLD
             Character.Architect: [commands.DrawCards(2, restriction=commands.Restriction.OnAfterAction|compulsory)],  # ARCHITECT-DRAW2
             Character.Warlord: [commands.Destroy(restriction=commands.Restriction.OnEndTurn)],
         }.get(char, [])

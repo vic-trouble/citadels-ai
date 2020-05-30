@@ -50,12 +50,13 @@ class InteractiveCommand(Command):
 
 
 class CashIn(Command):
-    def __init__(self, amount, **kwargs):
+    def __init__(self, amount, source=None, **kwargs):
         super().__init__(**kwargs)
         self._amount = amount
+        self._source = source
 
     def apply(self, player: Player, game: Game):
-        player.cash_in(self._amount)
+        player.cash_in(self._amount, self._source)
 
     def __repr__(self):
         return 'CashIn({})'.format(self._amount)
@@ -65,7 +66,10 @@ class CashIn(Command):
 
     @property
     def help(self):
-        return 'Take {} gold'.format(self._amount)
+        if self._source:
+            return f'Take {self._amount} gold ({self._source})'
+        else:
+            return f'Take {self._amount} gold'
 
 
 class DrawCards(Command):
