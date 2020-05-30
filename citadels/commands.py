@@ -15,7 +15,7 @@ class Restriction(IntFlag):
 
 
 class Command:
-    def __init__(self, restriction=None):
+    def __init__(self, restriction=0):
         self.restriction=restriction
 
     def apply(self, player: Player, game: Game):

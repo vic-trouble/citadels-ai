@@ -55,8 +55,12 @@ class CommandsSink:
         return self._done or not any(self._possible_commands.values())
 
     def end_turn(self):
-        if self._used_commands[CommandSpecifier.Action]:
-            self._done = True
+        assert self.can_end_turn
+        for command in self.all_possible_commands:
+            if command.restriction & commands.Restriction.Compulsory:
+                assert not isinstance(command, commands.InteractiveCommand)
+                command.apply(self._player, self._game)
+        self._done = True
 
     @property
     def can_end_turn(self):
@@ -65,10 +69,9 @@ class CommandsSink:
     def execute(self, command: commands.Command):
         command.apply(self._player, self._game)
         self._used_commands[command.specifier].append(command)
-        if command.restriction:
-            if command.restriction & commands.Restriction.OnEndTurn:
-                self._clear()
-                return
+        if command.restriction & commands.Restriction.OnEndTurn:
+            self._clear()
+            return
         self._update()
 
     def _clear(self):
@@ -86,18 +89,17 @@ class CommandsSink:
                 if isinstance(ability, commands.InteractiveCommand):
                     if not ability.ready and not ability.choices(self._player, self._game): # rare case when Destroy cannot be applied
                         continue
-                if ability.restriction:
-                    if ability.restriction & commands.Restriction.OnAfterAction:
-                        if not self._used_commands[CommandSpecifier.Action]:
-                            continue
-                        if ability.restriction & commands.Restriction.Compulsory:
-                            assert not isinstance(ability, commands.InteractiveCommand)
-                            ability.apply(self._player, self._game)
-                            self._used_commands[CommandSpecifier.Ability].append(ability)
-                            continue
-                    if ability.restriction & commands.Restriction.OnEndTurn:
-                        if not self._used_commands[CommandSpecifier.Action]:
-                            continue
+                if ability.restriction & commands.Restriction.OnAfterAction:
+                    if not self._used_commands[CommandSpecifier.Action]:
+                        continue
+                    if ability.restriction & commands.Restriction.Compulsory:
+                        assert not isinstance(ability, commands.InteractiveCommand)
+                        ability.apply(self._player, self._game)
+                        self._used_commands[CommandSpecifier.Ability].append(ability)
+                        continue
+                if ability.restriction & commands.Restriction.OnEndTurn:
+                    if not self._used_commands[CommandSpecifier.Action]:
+                        continue
                 self._possible_commands[CommandSpecifier.Ability].append(ability)
 
         # BUILD
@@ -112,7 +114,7 @@ class CommandsSink:
             color = CharacterInfo(self._player.char).color
             income = sum(DistrictInfo(district).color == color for district in self._player.city)
             if income:
-                self._possible_commands[CommandSpecifier.Income].append(commands.CashIn(income, source='income'))
+                self._possible_commands[CommandSpecifier.Income].append(commands.CashIn(income, source='income', restriction=commands.Restriction.Compulsory))
 
         self._assign_specifiers()
 

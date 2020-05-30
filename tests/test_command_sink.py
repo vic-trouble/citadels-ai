@@ -157,22 +157,11 @@ def test_sink_is_done_when_end_turn_called(game):
     # act
     sink = CommandsSink(player, game)
     sink.execute(sink.possible_actions[0])
+    assert sink.can_end_turn
     sink.end_turn()
 
     # assert
     assert sink.done
-
-
-def test_cannot_end_turn_without_action_taken(game):
-    # arrange
-    player = game.add_player('Player', char=Character.Assassin)
-
-    # act
-    sink = CommandsSink(player, game)
-    sink.end_turn()
-
-    # assert
-    assert not sink.done
 
 
 def test_income_may_be_taken_before_action(game):
@@ -222,3 +211,19 @@ def test_builds_can_be_made_after_action(game):
 
     # assert
     assert sink.possible_builds
+
+
+def test_income_is_taken_automatically_on_end_turn(game):
+    # arrange
+    player = game.add_player('Player', char=Character.Warlord, city=[District.Prison], hand=[District.Watchtower])
+
+    sink = CommandsSink(player, game)
+    draw_cards = next(command for command in sink.possible_actions if isinstance(command, commands.DrawSomeCards))
+    draw_cards.select(next(iter(draw_cards.choices(player, game))))
+    sink.execute(draw_cards)
+
+    # act
+    sink.end_turn()
+
+    # assert
+    assert player.gold == 1
