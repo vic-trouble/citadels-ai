@@ -301,6 +301,7 @@ class TermGamePlayListener:
             examine(self._player, self._game)
 
     def player_played(self, player: Player):
+        print('{plr} has finished their turn'.format(plr=help_str(player.name)))
         if player.player_id != self._player.player_id:
             self._continue()
 
