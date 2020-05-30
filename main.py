@@ -158,9 +158,14 @@ class TermPlayerController(PlayerController):
         while cancelled:
             cancelled = False
 
-            choices = ['.', '?']
-            help = [('.', 'End turn'), ('?', 'Examine')]
-            cmds = {'.': lambda: sink.end_turn(), '?': lambda: examine(player, game)}
+            choices = ['?']
+            help = [('?', 'Examine')]
+            cmds = {'?': lambda: examine(player, game)}
+
+            if sink.can_end_turn:
+                choices.append('.')
+                help.append(('.', 'End turn'))
+                cmds['.'] = sink.end_turn
 
             all_commands = list(sink.all_possible_commands)
             desc = [command.help for command in all_commands]
@@ -181,6 +186,8 @@ class TermGamePlayListener:
     def __init__(self, player: Player, game: Game):
         self._player = player
         self._game = game
+        self._skip_continue = False
+        self._always_skip_continue = False
 
     def player_added(self, player: Player):
         print('{} has joined'.format(player.name))
@@ -223,9 +230,29 @@ class TermGamePlayListener:
     def turn_started(self):
         print('\n\n---------------------------------\nNew round starts!')
         examine(self._player, self._game)
+        if not self._always_skip_continue:
+            self._skip_continue = False
 
     def _continue(self):
-        io.dialog('Enter to continue', allow_empty=True)
+        if self._skip_continue:
+            return
+
+        choices = ['?', '.', '!']
+        help = [('Enter', 'Continue'), ('?', 'Examine'), ('.', 'Skip'), ('!', 'Always skip')]
+        #cmds = {'?': lambda: examine(self._player, self._game)}
+        while True:
+            inp = io.dialog('', choices=choices, help=OrderedDict(help), allow_empty=True)
+            if not inp:
+                break
+            if inp == '?':
+                examine(self._player, self._game)
+            elif inp == '.':
+                self._skip_continue = True
+                break
+            elif inp == '!':
+                self._skip_continue = True
+                self._always_skip_continue = True
+                break
 
     def turn_ended(self):
         game = self._game
@@ -245,7 +272,9 @@ class TermGamePlayListener:
         print('{plr} is robbed by {thief} for {gold} gold'.format(plr=player.name, thief=thief.name, gold=gold))
 
     def player_plays(self, player: Player, char: Character):
-        print('\n{plr} is {char}'.format(plr=player.name, char=help_str(char)))
+        print('\n{plr} is the {char}'.format(plr=player.name, char=help_str(char)))
+        if player.player_id == self._player.player_id:
+            examine(self._player, self._game)
 
     def player_played(self, player: Player):
         if player.player_id != self._player.player_id:

@@ -58,6 +58,10 @@ class CommandsSink:
         if self._used_commands[CommandSpecifier.Action]:
             self._done = True
 
+    @property
+    def can_end_turn(self):
+        return not self.possible_actions
+
     def execute(self, command: commands.Command):
         command.apply(self._player, self._game)
         self._used_commands[command.specifier].append(command)
