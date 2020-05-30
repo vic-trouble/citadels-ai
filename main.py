@@ -3,6 +3,8 @@ from collections import OrderedDict
 import sys
 assert sys.version_info[:2] >= (3, 7)
 
+from colorama import Fore, Style, init as init_colorama
+
 from ai.naive_bot import NaiveBotController
 from ai.random_bot import RandomBotController
 from citadels.cards import Card, Character, CharacterInfo, Color, District, DistrictInfo, all_chars, simple_districts, standard_chars
@@ -14,18 +16,38 @@ from citadels import rules
 from term import io
 
 
+COLORING = True
+
+
+def color(color: Color):
+    return {
+        Color.Blue: Fore.LIGHTBLUE_EX + Style.BRIGHT,
+        Color.Green: Fore.LIGHTGREEN_EX + Style.BRIGHT,
+        Color.Red: Fore.LIGHTRED_EX + Style.BRIGHT,
+        Color.Yellow: Fore.LIGHTYELLOW_EX + Style.BRIGHT,
+        Color.Purple: Fore.LIGHTMAGENTA_EX + Style.BRIGHT,
+        None: Fore.LIGHTWHITE_EX + Style.BRIGHT,
+    }[color]
+
+
 def help_str(val):
     if isinstance(val, Character):
         info = CharacterInfo(val)
-        if info.color:
-            return '{name} ({color})'.format(name=info.name, color=help_str(info.color))
+        if COLORING:
+            return f'{color(info.color)}{info.name}{Style.RESET_ALL}'
         else:
-            return info.name
+            if info.color:
+                return '{name} ({color})'.format(name=info.name, color=help_str(info.color))
+            else:
+                return info.name
 
     elif isinstance(val, District):
         info = DistrictInfo(val)
-        return '{name} ({cost} {color})'.format(name=info.name, cost=info.cost,
-                                                color=help_str(info.color))
+        if COLORING:
+            return f'{color(info.color)}{info.name}{Style.RESET_ALL} ({info.cost})'
+        else:
+            return '{name} ({cost} {color})'.format(name=info.name, cost=info.cost,
+                                                    color=help_str(info.color))
     elif isinstance(val, Color):
         return {
             Color.Red: 'R',
@@ -49,7 +71,7 @@ def help_str(val):
 
 
 def examine(my_player, game):
-    unusable_chars = [CharacterInfo(char).name for char in game.turn.unused_chars if char]
+    unusable_chars = [help_str(char) for char in game.turn.unused_chars if char]
     if unusable_chars:
         print('Unusable chars: {}'.format(', '.join(unusable_chars)))
 
@@ -168,11 +190,11 @@ class TermGamePlayListener:
 
     def murder_announced(self, char: Character):
         assassin = self._game.players.find_by_char(Character.Assassin)
-        print('{ass} wants to kill {char}!'.format(ass=assassin.name, char=CharacterInfo(char).name))
+        print('{ass} wants to kill {char}!'.format(ass=assassin.name, char=help_str(char)))
 
     def theft_announced(self, char: Character):
         thief = self._game.players.find_by_char(Character.Thief)
-        print('{thief} wants to rob {char}!'.format(thief=thief.name, char=CharacterInfo(char).name))
+        print('{thief} wants to rob {char}!'.format(thief=thief.name, char=help_str(char)))
 
     def player_cashed_in(self, player: Player, amount: int):
         print('{plr} has taken {amount} gold ({total} in total)'.format(plr=player.name, amount=amount, total=player.gold))
@@ -181,22 +203,22 @@ class TermGamePlayListener:
         print('{plr} has paid {amount} gold (left with {total})'.format(plr=player.name, amount=amount, total=player.gold))
 
     def player_picked_char(self, player: Player, char: Character):
-        #print('{plr} is the {char}'.format(plr=player.name, char=CharacterInfo(char).name))
+        #print('{plr} is the {char}'.format(plr=player.name, char=help_str(char)))
         pass
 
     def player_taken_card(self, player: Player, district: District):
         is_me = player.player_id == self._player.player_id
-        card = DistrictInfo(district).name if is_me else 'a'
+        card = help_str(district) if is_me else 'a'
         print('{plr} has taken {card} card'.format(plr=player.name, card=card))
 
     def player_removed_card(self, player: Player, district: District):
-        print('{plr} has removed {card} card'.format(plr=player.name, card=DistrictInfo(district).name))
+        print('{plr} has removed {card} card'.format(plr=player.name, card=help_str(district)))
 
     def player_built_district(self, player: Player, district: District):
-        print('{plr} has built {district} ({total} in total)'.format(plr=player.name, district=DistrictInfo(district).name, total=len(player.city)))
+        print('{plr} has built {district} ({total} in total)'.format(plr=player.name, district=help_str(district), total=len(player.city)))
 
     def player_lost_district(self, player: Player, district: District):
-        print('{plr} has lost {card}'.format(plr=player.name, card=DistrictInfo(district).name))
+        print('{plr} has lost {card}'.format(plr=player.name, card=help_str(district)))
 
     def turn_started(self):
         print('\n\n---------------------------------\nNew round starts!')
@@ -244,7 +266,13 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('--name', type=str, default='')
     parser.add_argument('--bots', type=str, default='NRR')
+    parser.add_argument('--no-color', action='store_true', default=False)
     args = parser.parse_args()
+
+    global COLORING
+    COLORING = not args.no_color
+    if COLORING:
+        init_colorama()
 
     bots = args.bots
     name = args.name

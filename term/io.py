@@ -9,7 +9,7 @@ def tabulate(entries, sep='  ', width=80):
         return []
 
     def pad(s: str, width: int):
-        return s + ' ' * max(width - len(s), 0)
+        return s + ' ' * max(width - len(strip_coloring(s)), 0)
 
     def chunk(iterable, length):
         ch = []
@@ -21,7 +21,7 @@ def tabulate(entries, sep='  ', width=80):
         if ch:
             yield ch
 
-    max_length = max(len(e) for e in entries)
+    max_length = max(len(strip_coloring(e)) for e in entries)
     entries_per_line = width // max_length
     if entries_per_line == 0:
         entries_per_line = 1
@@ -67,11 +67,14 @@ def dialog(prolog: str, choices=None, help=None, allow_empty=False):
             raise TypeError('Invalid choices')
 
 
+def strip_coloring(text):
+    return join_text(lexem for lexem in lex(text) if not is_escape_code(lexem))
+
+
 def assign_keys(choices):
     res = ['?'] * len(choices)
     all_marks = tuple(chain(string.ascii_lowercase, string.ascii_uppercase, string.digits))
-    choices = list(enumerate(choices))
-    orig_choices = list(choices)
+    choices = list(enumerate(strip_coloring(choice) for choice in choices))
     choices_update = list(choices)
     j = 0
     while choices:
@@ -88,9 +91,65 @@ def assign_keys(choices):
     return res
 
 
-def emphasize(word, letter):
-    if letter in word.lower():
-        word = word.lower()
-        i = word.index(letter)
-        return word[:i] + letter.upper() + word[i+1:]
-    return word
+def emphasize(text: str, letter: str):
+    if letter not in strip_coloring(text).lower():
+        return text
+
+    r = []
+    for lexem in lex(text):
+        if is_escape_code(lexem):
+            r.append(lexem)
+        else:
+            rw = []
+            for c in lexem.lower():
+                if c == letter:
+                    rw.append(c.upper())
+                    letter = None
+                else:
+                    rw.append(c)
+            r.append(''.join(rw))
+
+    return join_text(r)
+
+
+def lex(text):
+    cur = ''
+    word = set(chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, '_'))
+    for c in text + '\0':
+        if is_escape_code(cur): # simplified escape code parsing
+            cur += c
+            if cur[1] != '[':
+                yield cur
+                cur = ''
+            elif c == 'm':
+                yield cur
+                cur = ''
+            continue
+
+        if c.isspace():
+            if cur:
+                yield cur
+                cur = ''
+        elif c in word:
+            cur = cur + c
+        elif is_escape_code(c):
+            if cur:
+                yield cur
+            cur = c
+        else:
+            if cur:
+                yield cur
+            cur = c
+
+
+def is_escape_code(text):
+    return text.startswith('\x1b')
+
+
+def join_text(lexems):
+    r = []
+    for lexem in lexems:
+        if r and lexem.isidentifier() and any(not is_escape_code(prev) for prev in r):
+            r.append(' ')
+        r.append(lexem)
+    return ''.join(r)
