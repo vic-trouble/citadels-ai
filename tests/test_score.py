@@ -1,5 +1,3 @@
-import pytest
-
 from citadels.cards import District
 from citadels.gameplay import GameController
 from citadels import rules

@@ -1,5 +1,3 @@
-import pytest
-
 from citadels.cards import Character, District
 from citadels import commands
 from citadels.shadow import ShadowGame, ShadowPlayer

@@ -115,12 +115,13 @@ def emphasize(text: str, letter: str):
 def is_punctuation(c):
     return c in ',.?!;:()'
 
+
 def lex(text):
     cur = ''
     word = set(chain(string.ascii_lowercase, string.ascii_uppercase, string.digits, '_'))
 
     for c in text + '\0':
-        if is_escape_code(cur): # simplified escape code parsing
+        if is_escape_code(cur):  # simplified escape code parsing
             cur += c
             if cur[1] != '[':
                 yield cur

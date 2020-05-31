@@ -1,6 +1,4 @@
-from copy import deepcopy
-
-from citadels.cards import Card, Deck
+from citadels.cards import Card
 from citadels.game import Game, Player, PlayersProxy, Turn
 
 

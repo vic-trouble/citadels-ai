@@ -117,7 +117,7 @@ def test_district_built(player, listener):
     player.build_district(District.Watchtower)
 
     # assert
-    built_district == District.Watchtower
+    assert built_district == District.Watchtower
 
 
 def test_district_lost(player, listener):
@@ -136,4 +136,4 @@ def test_district_lost(player, listener):
     player.destroy_district(District.Watchtower)
 
     # assert
-    destroyed_district == District.Watchtower
+    assert destroyed_district == District.Watchtower

@@ -1,5 +1,4 @@
 from enum import IntFlag, auto
-from itertools import chain
 
 from citadels.cards import Character, all_chars
 from citadels.event import EventTransaction
@@ -16,7 +15,7 @@ class Restriction(IntFlag):
 
 class Command:
     def __init__(self, restriction=0):
-        self.restriction=restriction
+        self.restriction = restriction
 
     def apply(self, player: Player, game: Game):
         raise NotImplementedError()
@@ -34,6 +33,9 @@ class InteractiveCommand(Command):
         raise NotImplementedError()
 
     def select(self, choice):
+        raise NotImplementedError()
+
+    def apply(self, player: Player, game: Game):
         raise NotImplementedError()
 
     @property
@@ -87,7 +89,7 @@ class DrawCards(Command):
         return 'DrawCards({draw})'.format(draw=self._draw)
 
     def __eq__(self, other):
-        return isinstance(other, DrawCards) and (self._draw) == (other._draw)
+        return isinstance(other, DrawCards) and self._draw == other._draw
 
     @property
     def help(self):
@@ -301,7 +303,7 @@ class Destroy(InteractiveCommand):
 
     def choices(self, player: Player, game: Game):
         if not self._target:
-            return [p for p in game.players if not rules.is_city_complete(p) and self._possible_districts(p, player)] # WARLORD-SPARE-COMPLETE, WARLORD-DESTROY-OWN
+            return [p for p in game.players if not rules.is_city_complete(p) and self._possible_districts(p, player)]  # WARLORD-SPARE-COMPLETE, WARLORD-DESTROY-OWN
 
         if not self._card:
             return self._possible_districts(self._target, player)

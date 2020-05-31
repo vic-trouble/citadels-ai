@@ -87,7 +87,7 @@ class CommandsSink:
             char_workflow = rules.CharacterWorkflow(self._player.char)
             for ability in char_workflow.abilities:
                 if isinstance(ability, commands.InteractiveCommand):
-                    if not ability.ready and not ability.choices(self._player, self._game): # rare case when Destroy cannot be applied
+                    if not ability.ready and not ability.choices(self._player, self._game):  # rare case when Destroy cannot be applied
                         continue
                 if ability.restriction & commands.Restriction.OnAfterAction:
                     if not self._used_commands[CommandSpecifier.Action]:
@@ -325,7 +325,7 @@ class GameController(EventSource):
 
             # KING-CROWNING
             if player.char == Character.King:
-                game.crowned_player = player # fires event itself
+                game.crowned_player = player  # fires event itself
 
             player_controller = self.player_controller(player)
             command_sink = CommandsSink(player, game)
@@ -385,7 +385,7 @@ class GameController(EventSource):
         self._game.reset()
 
     def player_added(self, player: Player):
-        self.fire_event('player_added', player) # TODO: shadow everything!
+        self.fire_event('player_added', player)  # TODO: shadow everything!
 
     def player_crowned(self, player: Player):
         self.fire_event('player_crowned', player)

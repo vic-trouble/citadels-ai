@@ -12,7 +12,7 @@ class Color(Enum):
     Purple = auto()
 
 
-all_colors = (Color.Red, Color.Yellow, Color.Green, Color.Blue) # TODO: add purple
+all_colors = (Color.Red, Color.Yellow, Color.Green, Color.Blue)  # TODO: add purple
 
 
 class Character(IntEnum):
