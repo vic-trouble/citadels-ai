@@ -1,18 +1,10 @@
 from unittest.mock import Mock
 import pytest
 
-from citadels.cards import Character, Deck, District
-from citadels.game import Game, Player, PlayerListener
+from citadels.cards import Character, District
+from citadels.game import Player
 
-
-@pytest.fixture
-def game():
-    return Game(Deck([]), Deck([]))
-
-
-@pytest.fixture
-def player(game):
-    return game.add_player('Player')
+from fixtures import game, player
 
 
 @pytest.fixture
@@ -26,7 +18,7 @@ def test_cashed_in(player, listener):
     # assert
     cashed_in_amount = None
 
-    def save_cashed_in(player: Player, amount: int):
+    def save_cashed_in(player: Player, amount: int, source: str):
         nonlocal cashed_in_amount
         cashed_in_amount = amount
 

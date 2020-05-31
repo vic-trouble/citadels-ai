@@ -1,17 +1,10 @@
 # TODO: test king ability?
 
-import pytest
-
-from citadels.cards import Character, Deck, District, simple_districts, standard_chars
+from citadels.cards import Character, District
 from citadels import commands
-from citadels.game import Game
 from citadels.gameplay import CommandsSink
 
-@pytest.fixture
-def game():
-    characters = Deck(standard_chars())
-    districts = Deck(simple_districts())
-    return Game(characters, districts)
+from fixtures import game
 
 
 def test_possible_actions(game):

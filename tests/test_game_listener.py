@@ -1,18 +1,9 @@
 import pytest
 from unittest.mock import Mock
 
-from citadels.cards import Character, Deck
-from citadels.game import Game, GameListener, Player
+from citadels.cards import Character
 
-
-@pytest.fixture
-def game():
-    return Game(Deck([]), Deck([]))
-
-
-@pytest.fixture
-def player(game):
-    return game.add_player('Player')
+from fixtures import game, player
 
 
 @pytest.fixture

@@ -1,8 +1,10 @@
 import pytest
 
-from citadels.cards import Character, standard_chars, simple_districts
+from citadels.cards import Character
 from citadels.game import Deck, Game, Player
 from citadels.gameplay import CommandsSink, GameController, GamePlayConfig, PlayerController
+
+from fixtures import game
 
 
 class DummyPlayerController(PlayerController):
@@ -34,13 +36,6 @@ class SpyPlayerController:
             sink.execute(sink.possible_actions[0])
         else:
             sink.end_turn()
-
-
-@pytest.fixture
-def game():
-    characters = Deck(standard_chars())
-    districts = Deck(simple_districts())
-    return Game(characters, districts)
 
 
 def test_start_game(game):

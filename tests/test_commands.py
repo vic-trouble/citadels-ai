@@ -1,24 +1,10 @@
 import pytest
 
-from citadels.cards import Character, Deck, District, simple_districts, standard_chars
+from citadels.cards import Character, District
 from citadels import commands
-from citadels.game import Game
 from citadels.shadow import ShadowGame, ShadowPlayer
 
-
-@pytest.fixture
-def game():
-    characters = Deck(standard_chars())
-    districts = Deck(simple_districts())
-
-    game = Game(characters, districts)
-    game.new_turn()
-    return game
-
-
-@pytest.fixture
-def player(game):
-    return game.add_player('Player1')
+from fixtures import game, player
 
 
 def test_cash_in(player, game):

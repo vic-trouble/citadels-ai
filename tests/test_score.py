@@ -1,16 +1,10 @@
 import pytest
 
-from citadels.cards import Deck, District, standard_chars, simple_districts
-from citadels.game import Game
+from citadels.cards import District
 from citadels.gameplay import GameController
 from citadels import rules
 
-
-@pytest.fixture
-def game():
-    characters = Deck(standard_chars())
-    districts = Deck(simple_districts())
-    return Game(characters, districts)
+from fixtures import game
 
 
 def test_score_is_cost_of_the_city(game):
