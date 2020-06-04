@@ -14,6 +14,12 @@ class Bank:
     def __init__(self):
         self._accounts = defaultdict(lambda: BankAccount(self))
 
+    def clone(self):
+        bank = Bank()
+        for key, account in self._accounts.items():
+            bank._accounts[key].cash_in(account.balance)
+        return bank
+
     def account(self, key):
         """ Player's account """
         return self._accounts[key]
@@ -23,6 +29,11 @@ class BankAccount:
     def __init__(self, bank: Bank):
         self._bank = bank
         self._balance = 0
+
+    def clone(self, bank: Bank):
+        account = BankAccount(bank)
+        account._balance = self._balance
+        return account
 
     @property
     def balance(self):
@@ -71,14 +82,17 @@ class PlayerListener:
 
 
 class Player(EventSource):
-    def __init__(self, player_id, game, char=None, hand=None, city=None):
+    def __init__(self, player_id, game, name='', char=None, hand=None, city=None):
         super().__init__()
-        self.name = ''
+        self.name = name
         self._id = player_id
         self._game = game
         self._char = char
         self._hand = list(hand) if hand else []
         self._city = list(city) if city else []
+
+    def clone(self, game):
+        return Player(self._id, game, name=self.name, char=self._char, hand=self._hand, city=self._city)
 
     def reset(self):
         self._char = None
@@ -155,6 +169,14 @@ class Turn:
         self._killed_char = None
         self._robbed_char = None
         self._first_completer = None
+
+    def clone(self, game):
+        turn = Turn(game)
+        turn._unused_chars = list(self._unused_chars)
+        turn._killed_char = self._killed_char
+        turn._robbed_char = self._robbed_char
+        turn._first_completer = self._first_completer
+        return turn
 
     def drop_char(self, char: Character):
         """ Remove character from playable set """
@@ -262,6 +284,17 @@ class Game(EventSource):
         self._chars = None
         self._orig_districts = deepcopy(districts)
         self._districts = deepcopy(self._orig_districts)
+
+    def clone(self):
+        game = Game(self._orig_chars, self._orig_districts)
+        game._players = [player.clone(game) for player in self._players]
+        game._bank = self._bank.clone()
+        if self._crowned_player:
+            game._crowned_player = game.players.find_by_id(self._crowned_player.player_id)
+        game._turn = self._turn.clone(game)
+        game._chars = deepcopy(self._chars)
+        game._districts = deepcopy(self._districts)
+        return game
 
     def add_player(self, name, char=None, hand=None, city=None):
         """ Add new player to the game """

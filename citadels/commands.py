@@ -341,9 +341,9 @@ class Destroy(InteractiveCommand):
 
 
 class Build(InteractiveCommand):
-    def __init__(self, **kwargs):
+    def __init__(self, district=None, **kwargs):
         super().__init__(**kwargs)
-        self._district = None
+        self._district = district
 
     def apply(self, player: Player, game: Game):
         assert self._district

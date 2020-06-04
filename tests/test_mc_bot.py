@@ -1,7 +1,15 @@
-from ai.mc_bot import evaluate
-from citadels.cards import District
+import pytest
+
+from ai.mc_bot import MonteCarloBotController, evaluate
+from citadels.cards import Character, District
+from citadels import commands
 
 from fixtures import game, player1, player2
+
+
+@pytest.fixture
+def bot():
+    return MonteCarloBotController()
 
 
 def test_better_eval_if_more_score(game, player1, player2):
@@ -41,3 +49,15 @@ def test_better_eval_if_more_gold(game, player1, player2):
 
     # assert
     assert eval1 > eval2
+
+
+def test_mc_bot_build_finishing_district(game, bot, player1):
+    # arrange
+    player = game.add_player('bot', char=Character.King, hand=[District.Palace, District.Watchtower], city=[District.Docks]*7)
+    player.cash_in(10)
+
+    # act
+    plan = bot.make_plan(player, game, sim_limit=100)
+
+    # assert
+    assert commands.Build(district=District.Palace) in plan
