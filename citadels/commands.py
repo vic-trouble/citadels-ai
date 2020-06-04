@@ -217,20 +217,22 @@ class Rob(InteractiveCommand):
 
 
 class SwapHands(InteractiveCommand):
-    def __init__(self, target=None, **kwargs):
+    def __init__(self, target_id=None, **kwargs):
         super().__init__(**kwargs)
-        self._target = target
+        self._target_id = target_id
 
     def choices(self, player: Player, game: Game):
-        return [p for p in game.players if p.player_id != player.player_id] if not self._target else []
+        if self._target_id:
+            return []
+        return [p.player_id for p in game.players if p.player_id != player.player_id]
 
     def select(self, choice):
-        self._target = choice
+        self._target_id = choice
 
     def apply(self, player: Player, game: Game):
-        assert self._target
+        assert self._target_id
         player1 = game.players.find_by_id(player.player_id)
-        player2 = game.players.find_by_id(self._target.player_id)
+        player2 = game.players.find_by_id(self._target_id)
 
         with EventTransaction(player1, 'swapped_hands', player1, player2), EventTransaction(player2, 'swapped_hands', player2, player1):
             p1_cards = tuple(player1.hand)
@@ -242,10 +244,10 @@ class SwapHands(InteractiveCommand):
                 player2.take_card(card)
 
     def __repr__(self):
-        return 'SwapHands({})'.format(self._target)
+        return 'SwapHands(target_id={})'.format(self._target_id)
 
     def __eq__(self, other):
-        return isinstance(other, SwapHands) and self._target == other._target
+        return isinstance(other, SwapHands) and self._target_id == other._target_id
 
     @property
     def help(self):
@@ -253,7 +255,7 @@ class SwapHands(InteractiveCommand):
 
     @property
     def ready(self):
-        return bool(self._target)
+        return bool(self._target_id)
 
 
 class ReplaceHand(InteractiveCommand):
@@ -293,31 +295,31 @@ class ReplaceHand(InteractiveCommand):
 
 
 class Destroy(InteractiveCommand):
-    def __init__(self, target=None, card=None, **kwargs):
+    def __init__(self, target_id=None, card=None, **kwargs):
         super().__init__(**kwargs)
-        self._target = target
+        self._target_id = target_id
         self._card = card
 
     def _possible_districts(self, victim: Player, destroyer: Player):
         return [d for d in victim.city if rules.can_be_destroyed(d, victim) and rules.how_much_cost_to_destroy(d, destroyer) <= destroyer.gold]
 
     def choices(self, player: Player, game: Game):
-        if not self._target:
-            return [p for p in game.players if not rules.is_city_complete(p) and self._possible_districts(p, player)]  # WARLORD-SPARE-COMPLETE, WARLORD-DESTROY-OWN
+        if not self._target_id:
+            return [p.player_id for p in game.players if not rules.is_city_complete(p) and self._possible_districts(p, player)]  # WARLORD-SPARE-COMPLETE, WARLORD-DESTROY-OWN
 
         if not self._card:
-            return self._possible_districts(self._target, player)
+            return self._possible_districts(game.players.find_by_id(self._target_id), player)
 
         return []
 
     def select(self, choice):
-        if not self._target:
-            self._target = choice
+        if not self._target_id:
+            self._target_id = choice
         elif not self._card:
             self._card = choice
 
     def apply(self, player: Player, game: Game):
-        target = game.players.find_by_id(self._target.player_id)
+        target = game.players.find_by_id(self._target_id)
         assert not rules.is_city_complete(target)
         target.destroy_district(self._card)
         cost = rules.how_much_cost_to_destroy(self._card, target)
@@ -326,10 +328,10 @@ class Destroy(InteractiveCommand):
         game.districts.put_on_bottom(self._card)
 
     def __repr__(self):
-        return 'Destroy(target={target}, card={card})'.format(target=self._target, card=self._card)
+        return 'Destroy(target_id={target_id}, card={card})'.format(target_id=self._target_id, card=self._card)
 
     def __eq__(self, other):
-        return isinstance(other, Destroy) and (self._target, self._card) == (other._target, other._card)
+        return isinstance(other, Destroy) and (self._target_id, self._card) == (other._target_id, other._card)
 
     @property
     def help(self):
@@ -337,7 +339,7 @@ class Destroy(InteractiveCommand):
 
     @property
     def ready(self):
-        return self._target and self._card
+        return self._target_id and self._card
 
 
 class Build(InteractiveCommand):

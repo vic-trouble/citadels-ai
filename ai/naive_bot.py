@@ -150,14 +150,14 @@ class NaiveBotController(PlayerController):
         destroy = abilities[0]
         assert isinstance(destroy, commands.Destroy)
 
-        if len(context.builder_player.city) >= 6 and context.builder_player != player and context.builder_player in destroy.choices(player, game):
-            destroy.select(context.builder_player)
+        if len(context.builder_player.city) >= 6 and context.builder_player != player and context.builder_player.player_id in destroy.choices(player, game):
+            destroy.select(context.builder_player.player_id)
             district = max(destroy.choices(player, game), key=lambda d: DistrictInfo(d).cost)
             destroy.select(district)
             return destroy
 
         # otherwise fire at second to lead
-        for victim in sorted((p for p in destroy.choices(player, game) if p != player), key=lambda p: len(p.city)):
+        for victim in sorted((pid for pid in destroy.choices(player, game) if pid != player.player_id), key=lambda pid: len(game.players.find_by_id(pid).city)):
             destroy.select(victim)
             if len(player.city) >= len(context.builder_player.city) or player.gold >= 4:
                 district = max(destroy.choices(player, game), key=lambda d: DistrictInfo(d).cost)
@@ -220,14 +220,14 @@ class NaiveBotController(PlayerController):
         if swap_hands:
             if context.builder_player and context.builder_player != player:
                 if len(context.builder_player.hand) - len(player.hand) >= 2:
-                    swap_hands.select(context.builder_player)
+                    swap_hands.select(context.builder_player.player_id)
                     return swap_hands
 
         # if low on cards, swap with the hoarder
         if swap_hands:
             if context.hoarder_player and context.builder_player != player:
                 if len(player.hand) <= 1:
-                    swap_hands.select(context.hoarder_player)
+                    swap_hands.select(context.hoarder_player.player_id)
                     return swap_hands
 
         # if low build capability, replace hand

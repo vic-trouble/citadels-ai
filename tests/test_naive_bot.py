@@ -80,7 +80,7 @@ def test_destroy_lead_player_district(bot, game, warlord, king, thief):
     command = bot.destroy(sink.possible_abilities, context, warlord, game)
 
     # assert
-    assert command == commands.Destroy(target=thief, card=District.Docks)
+    assert command == commands.Destroy(target_id=thief.player_id, card=District.Docks)
 
 
 def test_kill_lead_player_if_he_has_color_bias(bot, game, assassin, player1, player2):
@@ -263,7 +263,7 @@ def test_do_tricks_swaps_hands_with_the_leader(bot, game, magician, player1, pla
     swap_hands = bot.do_tricks(sink.possible_abilities, context, magician, game)
 
     # assert
-    assert swap_hands == commands.SwapHands(target=player2)
+    assert swap_hands == commands.SwapHands(target_id=player2.player_id)
 
 
 def test_do_tricks_swaps_hands_with_the_hoarder_low_on_cards(bot, game, magician, player1):
@@ -281,7 +281,7 @@ def test_do_tricks_swaps_hands_with_the_hoarder_low_on_cards(bot, game, magician
     swap_hands = bot.do_tricks(sink.possible_abilities, context, magician, game)
 
     # assert
-    assert swap_hands == commands.SwapHands(target=player1)
+    assert swap_hands == commands.SwapHands(target_id=player1.player_id)
 
 
 def test_do_tricks_replces_hand_if_nothing_to_build(bot, game, magician):

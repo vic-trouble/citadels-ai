@@ -61,3 +61,18 @@ def test_mc_bot_build_finishing_district(game, bot, player1):
 
     # assert
     assert commands.Build(district=District.Palace) in plan
+
+
+def test_mc_bot_destroys_rival_district(game, bot):
+    # arrange
+    player = game.add_player('bot', char=Character.Warlord, hand=[District.Palace, District.Watchtower], city=[District.Docks]*6)
+    player.cash_in(10)
+
+    leader = game.add_player('leader', char=Character.King, hand=[District.Palace], city=[District.Docks]*6 + [District.Cathedral])
+    game.add_player('second', char=Character.King, hand=[District.Palace], city=[District.Docks]*6)
+
+    # act
+    plan = bot.make_plan(player, game, sim_limit=500)
+
+    # assert
+    assert commands.Destroy(target_id=leader.player_id, card=District.Cathedral) in plan

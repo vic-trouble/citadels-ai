@@ -10,7 +10,7 @@ PROB_END_TURN = 0.1
 
 
 def per_player_evaluate(player, game):
-    return score(player, game) + \
+    return score(player, game) * 2 + \
            player.gold
 
 

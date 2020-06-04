@@ -128,9 +128,9 @@ def test_swap_hands(game):
 
     # act
     choices = command.choices(ShadowPlayer(player1, me=True), ShadowGame(player, game))
-    assert [p.name for p in choices] == ['Player2']
+    assert choices == [player2.player_id]
 
-    command.select(player2)
+    command.select(player2.player_id)
     assert not command.choices(ShadowPlayer(player1, me=True), ShadowGame(player, game))
 
     command.apply(player1, game)
@@ -176,8 +176,8 @@ def test_destroy(game):
     command = commands.Destroy()
 
     # act
-    assert [p.name for p in command.choices(ShadowPlayer(player1, me=True), ShadowGame(player1, game))] == ['Player1', 'Player2']
-    command.select(player2)
+    assert command.choices(ShadowPlayer(player1, me=True), ShadowGame(player1, game)) == [player1.player_id, player2.player_id]
+    command.select(player2.player_id)
 
     assert command.choices(ShadowPlayer(player1, me=True), ShadowGame(player1, game)) == [District.Docks]
     command.select(District.Docks)
